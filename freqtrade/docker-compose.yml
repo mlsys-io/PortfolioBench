@@ -1,0 +1,14 @@
+services:
+  freqtrade:
+    build: .
+    restart: unless-stopped
+    container_name: freqtrade
+    volumes:
+      - "./user_data:/freqtrade/user_data"
+      - "./freqtrade/exchange/exchange.py:/freqtrade/freqtrade/exchange/exchange.py"
+    ports:
+      - "8080:8080"
+    command: >
+      webserver
+      --logfile /freqtrade/user_data/logs/freqtrade.log
+      --config /freqtrade/user_data/config.json
