@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-# A toy script to set up simple logic for bactesting. Will upgrade to a more customized one later
+# A toy script to set up simple logic for backtesting. Will upgrade to a more customized one later
 
 if [[ ! -n "$VIRTUAL_ENV" ]]; then
     echo "Virtual environment is not active. Activating virtual environment"
@@ -14,11 +14,11 @@ echo "-d data directory"
 echo "-a assets"
 
 # Backtesting
-echo "Start bactesting:"
+echo "Start backtesting:"
 
 # Collect user defined flags
 optstring="s:d:a:"
-pairs=""
+pairsxs=""
 strategy=""
 datapath=""
 
@@ -33,10 +33,6 @@ done
 # Build backtesting command flag
 
 cli_flags="--timerange 20250501-20250601 --timeframe 4h --strategy-path ./strategy "
-
-if [[ "$pairs" != "" ]]; then
-    cli_flags+="--pairs ${pairxs} "
-fi
 
 if [[ "$strategy" !=  "" ]]; then
     cli_flags+="--strategy $strategy "
