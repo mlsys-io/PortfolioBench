@@ -125,10 +125,10 @@ jupyter = [
   "nbconvert",
 ]
 all = [
-  "freqtrade[plot,hyperopt,freqai,freqai_rl,jupyter]",
+  "freqtrade_hacked[plot,hyperopt,freqai,freqai_rl,jupyter]",
 ]
 dev = [
-  "freqtrade[all,develop]",
+  "freqtrade_hacked[all,develop]",
 ]
 
 [project.urls]
