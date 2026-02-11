@@ -1,3 +1,0 @@
-[submodule "freqtrade"]
-	path = freqtrade
-	url = https://github.com/mlsys-io/freqtrade.git
