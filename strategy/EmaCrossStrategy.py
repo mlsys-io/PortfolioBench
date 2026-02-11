@@ -31,6 +31,8 @@ from freqtrade.strategy import (
     AnnotationType,
 )
 
+from alpha.SimpleEmaFactors import EmaAlpha
+
 # Add your lib to import here
 import talib.abstract as ta
 from technical import qtpylib
@@ -76,10 +78,11 @@ class EmaCrossStrategy(IStrategy):
     ema_exit_length = IntParameter(5, 10, default=6, space="sell")
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        dataframe["ema_fast"] = ta.EMA(dataframe, timeperiod=self.ema_fast_length.value)
-        dataframe["ema_slow"] = ta.EMA(dataframe, timeperiod=self.ema_slow_length.value)
-        dataframe["ema_exit"] = ta.EMA(dataframe, timeperiod=self.ema_exit_length.value)
-        dataframe["mean-volume"] = dataframe["volume"].rolling(20).mean()
+        # dataframe["ema_fast"] = ta.EMA(dataframe, timeperiod=self.ema_fast_length.value)
+        # dataframe["ema_slow"] = ta.EMA(dataframe, timeperiod=self.ema_slow_length.value)
+        # dataframe["ema_exit"] = ta.EMA(dataframe, timeperiod=self.ema_exit_length.value)
+        # dataframe["mean-volume"] = dataframe["volume"].rolling(20).mean()
+        dataframe = EmaAlpha(dataframe, metadata).process()
         return dataframe
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
