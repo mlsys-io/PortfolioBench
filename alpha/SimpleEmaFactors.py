@@ -1,10 +1,14 @@
 import talib.abstract as ta
 from technical import qtpylib
 
-from alpha import IAlpha
+from alpha.interface import IAlpha
+from freqtrade.strategy.parameters import IntParameter
 
 class EmaAlpha(IAlpha):
     def __init__(self, dataframe, metadata):
+        self.ema_fast_length = IntParameter(5, 15, default=12, space="buy")
+        self.ema_slow_length = IntParameter(20, 30, default=26, space="buy")
+        self.ema_exit_length = IntParameter(5, 10, default=6, space="sell")
         super().__init__(dataframe, metadata)
         
     def process(self):
