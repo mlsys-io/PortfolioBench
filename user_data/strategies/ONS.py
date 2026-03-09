@@ -26,15 +26,10 @@ class ONS_Portfolio(IStrategy):
         "delta": 0.125
     }
 
-    TARGET_PAIRS = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT", "MSFT/USDT"]
-
-    # Get price for each target pairs, regardless which one is currently being analyzed 
-    def informative_pairs(self) -> List[tuple]:
-        return [(pair, self.timeframe) for pair in self.TARGET_PAIRS]
-
-    # Custom: Calculate daily target weight formula
+    # Custom: Calculate daily target weight formula dynamically
     def calculate_ons_weights(self, price_data: pd.DataFrame) -> pd.DataFrame:
-        n_assets = len(self.TARGET_PAIRS)
+        target_pairs = price_data.columns.tolist()
+        n_assets = len(target_pairs)
         n_rows = len(price_data)
         
         A = np.eye(n_assets)
@@ -43,7 +38,7 @@ class ONS_Portfolio(IStrategy):
         
         weights_history = np.zeros((n_rows, n_assets))
         
-        prices = price_data[self.TARGET_PAIRS].values
+        prices = price_data.values
         r_matrix = np.vstack([np.ones(n_assets), prices[1:] / prices[:-1]]) # Calculate r_t
         
         # Iterate through the time period
@@ -76,7 +71,7 @@ class ONS_Portfolio(IStrategy):
             p = p_next
 
         # Store the weights of portfolio on days
-        weights_df = pd.DataFrame(weights_history, index=price_data.index, columns=self.TARGET_PAIRS)
+        weights_df = pd.DataFrame(weights_history, index=price_data.index, columns=target_pairs)
         return weights_df
 
     # Custom: Solve for the projection step in the newton method
@@ -100,24 +95,30 @@ class ONS_Portfolio(IStrategy):
         current_pair = metadata['pair']
         
         if self.dp:
+            # Dynamically fetch the current whitelist provided to the bot
+            target_pairs = self.dp.current_whitelist()
             price_dict = {}
-            for pair in self.TARGET_PAIRS:
+            for pair in target_pairs:
                 inf_df = self.dp.get_pair_dataframe(pair, self.timeframe)
                 price_dict[pair] = inf_df['close']
             
             aligned_prices = pd.DataFrame(price_dict).dropna()
             
-            cache_key = str(aligned_prices.index[0]) + str(aligned_prices.index[-1])
-            
-            if cache_key not in self.ons_weights_cache:
-                print(f"Calculating ONS weights for {len(aligned_prices)} candles...")
-                weights_df = self.calculate_ons_weights(aligned_prices) # Calculate portfolio weight
-                self.ons_weights_cache[cache_key] = weights_df
-            
-            weights = self.ons_weights_cache[cache_key]
-            
-            if current_pair in weights.columns:
-                dataframe['target_weight'] = dataframe.index.map(weights[current_pair])
+            if not aligned_prices.empty:
+                # Cache key includes the number of pairs to prevent overlap between different test runs
+                cache_key = str(aligned_prices.index[0]) + str(aligned_prices.index[-1]) + str(len(target_pairs))
+                
+                if cache_key not in self.ons_weights_cache:
+                    logger.info(f"Calculating ONS weights for {len(aligned_prices)} candles across {len(target_pairs)} pairs...")
+                    weights_df = self.calculate_ons_weights(aligned_prices) # Calculate portfolio weight
+                    self.ons_weights_cache[cache_key] = weights_df
+                
+                weights = self.ons_weights_cache[cache_key]
+                
+                if current_pair in weights.columns:
+                    dataframe['target_weight'] = dataframe.index.map(weights[current_pair])
+                else:
+                    dataframe['target_weight'] = 0.0
             else:
                 dataframe['target_weight'] = 0.0
                 
@@ -205,7 +206,7 @@ class ONS_Portfolio(IStrategy):
         # Get adjustment needed
         diff = target_size - current_position_value
 
-        logger.info(f"PAIR: {trade.pair} | TARGET: {target_size:.2f} | CURRENT: {current_position_value:.2f} | DIFF: {diff:.2f}")
+        # logger.info(f"PAIR: {trade.pair} | TARGET: {target_size:.2f} | CURRENT: {current_position_value:.2f} | DIFF: {diff:.2f}")
         
         if abs(diff) > 1e-6: 
             return diff
