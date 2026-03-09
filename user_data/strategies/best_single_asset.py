@@ -9,7 +9,7 @@ class BestSingleAssetPortfolio(IStrategy):
     """
     Winner-takes-all momentum rotation strategy
     """
-
+    INTERFACE_VERSION = 3
     timeframe = "1d"
     stoploss = -1.0
 
@@ -17,9 +17,8 @@ class BestSingleAssetPortfolio(IStrategy):
     max_open_trades = 1
     REBALANCE_DATE = 1
     LOOKBACK = 90
-
     process_only_new_candles = True
-    startup_candle_count = self.LOOKBACK # Ensure enough data for lookback
+    startup_candle_count = 90 # Ensure enough data for lookback
 
     minimal_roi = {}
 
