@@ -5,7 +5,7 @@ services:
     container_name: freqtrade
     volumes:
       - "./user_data:/freqtrade/user_data"
-      - "./freqtrade_local/exchange/exchange.py:/freqtrade/freqtrade/exchange/exchange.py"
+      - "./freqtrade/exchange/exchange.py:/freqtrade/freqtrade/exchange/exchange.py"
     ports:
       - "8080:8080"
     command: >

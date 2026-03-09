@@ -14,7 +14,7 @@ INDEX_PAIRS="DJI/USDT FTSE/USDT GSPC/USDT"
 MIX_PAIRS="$CRYPTO_PAIRS $STOCK_PAIRS $INDEX_PAIRS"
 
 # 3. Define Timeframes
-TIMEFRAMES=("5m" "1d")
+TIMEFRAMES=("5m" "4h" "1d") # Added "4h" here
 
 # 4. Core Execution Function
 run_backtest() {
@@ -33,6 +33,8 @@ run_backtest() {
     local timerange=""
     if [[ "$tf" == "5m" ]]; then
         timerange="20260101-20260108"
+    elif [[ "$tf" == "4h" ]]; then
+        timerange="20260101-20260131" 
     elif [[ "$tf" == "1d" ]]; then
         timerange="20240101-20260131"
     fi
@@ -44,13 +46,14 @@ run_backtest() {
     echo "Starting backtest | Category: $category | Timeframe: $tf | Timerange: $timerange"
     echo "Pairs: $pairs"
     echo "=================================================="
-    
+
     # Execute Freqtrade via Docker
     docker compose run --rm freqtrade backtesting \
         --strategy "$STRATEGY" \
         --timeframe "$tf" \
         --timerange "$timerange" \
         --pairs $pairs \
+        --dry-run-wallet 1000000 \
         --export trades \
         --export-filename "$export_file"
         
