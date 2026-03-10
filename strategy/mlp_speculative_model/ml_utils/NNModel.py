@@ -1,8 +1,5 @@
-import os
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from sklearn.dummy import DummyClassifier
 from sklearn.preprocessing import LabelEncoder
 from torch.utils.data import DataLoader, TensorDataset
 

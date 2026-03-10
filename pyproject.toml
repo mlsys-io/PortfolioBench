@@ -192,7 +192,7 @@ log_date_format = "%Y-%m-%d %H:%M:%S"
 
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-addopts = "--dist loadscope"
+addopts = ""
 
 [tool.mypy]
 ignore_missing_imports = true

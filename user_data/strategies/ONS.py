@@ -4,7 +4,7 @@ from scipy.optimize import minimize
 from freqtrade.strategy import IStrategy
 from freqtrade.persistence import Trade
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 import logging
 
 # Initialize the logger

@@ -444,7 +444,7 @@ def run_portfolio(
         w_ons=0.33,     # ~1/3 to ONS adaptive weights
         w_ema=0.33,     # ~1/3 to EMA-cross momentum overlay
     )
-    print(f"  Sample final weights (last bar):")
+    print("  Sample final weights (last bar):")
     last_row = final_weights.iloc[-1]
     for pair in active_pairs:
         print(f"    {pair}: {last_row[pair]:.4f}")

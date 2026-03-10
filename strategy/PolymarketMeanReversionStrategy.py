@@ -8,12 +8,10 @@ Designed for contracts where sharp moves are driven by noise/overreaction
 rather than fundamental shifts (e.g., speculative events, sentiment spikes).
 """
 
-import numpy as np
 import pandas as pd
 from datetime import datetime
-from typing import Optional
 
-from freqtrade.strategy import IStrategy, Trade
+from freqtrade.strategy import IStrategy
 
 from alpha.PolymarketFactors import PolymarketAlpha
 

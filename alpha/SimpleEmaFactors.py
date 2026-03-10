@@ -1,5 +1,4 @@
 import talib.abstract as ta
-from technical import qtpylib
 
 from alpha.interface import IAlpha
 from freqtrade.strategy.parameters import IntParameter
