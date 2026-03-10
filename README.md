@@ -2,7 +2,7 @@
 
 A multi-asset portfolio benchmarking framework for backtesting trading strategies and portfolio allocation algorithms across **cryptocurrencies**, **US equities**, **global indices**, and **event prediction markets** (Polymarket).
 
-PortfolioBench ships with 119 instruments, 16 strategies, and a full benchmarking suite — so you can evaluate portfolio ideas out of the box.
+PortfolioBench ships with 119 instruments, 16 strategies, 5 alpha factors, and a full benchmarking suite — so you can evaluate portfolio ideas out of the box.
 
 ---
 
@@ -111,6 +111,20 @@ python benchmark_all.py --timeframes 5m 4h --categories crypto stocks --json-out
 This gives up to **192 benchmark configurations** (16 strategies x 4 asset classes x 3 timeframes).
 
 **Reported metrics**: total return, annualized return, Sharpe ratio, max drawdown, number of trades, win rate, profit factor.
+
+---
+
+## Alpha Factors
+
+Alpha factors are pluggable indicator modules that enrich OHLCV data with derived signals. They implement the `IAlpha` interface and can be composed into trading strategies.
+
+| Alpha | Indicators | Use Case |
+|-------|-----------|----------|
+| **EmaAlpha** | EMA fast/slow/exit, mean volume | Trend-following crossover signals |
+| **RsiAlpha** | RSI, RSI signal line, overbought/oversold flags | Mean-reversion and momentum timing |
+| **MacdAlpha** | MACD line, signal line, histogram, histogram direction | Trend-confirmation and momentum |
+| **BollingerAlpha** | Upper/middle/lower bands, bandwidth, %B | Volatility breakouts and mean-reversion |
+| **PolymarketAlpha** | Probability momentum, RSI, z-score, volume surge, resolution proximity | Prediction market contract analysis |
 
 ---
 
@@ -234,7 +248,7 @@ New tickers are automatically recognized — no exchange configuration needed.
 PortfolioBench/
 ├── strategy/                  # 8 trading strategies (IStrategy implementations)
 ├── user_data/strategies/      # 8 portfolio algorithms
-├── alpha/                     # Pluggable alpha factors (IAlpha interface)
+├── alpha/                     # 5 pluggable alpha factors (IAlpha interface)
 ├── portfolio/                 # Standalone portfolio construction pipeline
 ├── freqtrade/exchange/
 │   ├── portfoliobench.py      # Multi-asset exchange (extends Binance)

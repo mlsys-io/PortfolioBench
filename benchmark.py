@@ -326,7 +326,7 @@ def run_portfolio_pipeline_test() -> Dict[str, Any]:
 # ============================================================================
 
 def run_alpha_smoke_test() -> Dict[str, Any]:
-    """Smoke-test the alpha factor interface and EmaAlpha."""
+    """Smoke-test all alpha factor implementations (EMA, RSI, MACD, Bollinger)."""
     result: Dict[str, Any] = {
         "test": "alpha_factors",
         "status": "error",
@@ -338,6 +338,9 @@ def run_alpha_smoke_test() -> Dict[str, Any]:
     try:
         import pandas as pd
         from alpha.SimpleEmaFactors import EmaAlpha
+        from alpha.RsiAlpha import RsiAlpha
+        from alpha.MacdAlpha import MacdAlpha
+        from alpha.BollingerAlpha import BollingerAlpha
 
         # Load one pair's data
         filepath = os.path.join(DATA_DIR, "BTC_USDT-1d.feather")
@@ -345,23 +348,56 @@ def run_alpha_smoke_test() -> Dict[str, Any]:
         df["date"] = pd.to_datetime(df["date"], utc=True)
         df = df.sort_values("date").reset_index(drop=True)
 
-        alpha = EmaAlpha(df.copy(), metadata={"pair": "BTC/USDT"})
-        enriched = alpha.process()
+        all_missing = []
 
-        expected_cols = ["ema_fast", "ema_slow", "ema_exit", "mean-volume"]
-        missing = [c for c in expected_cols if c not in enriched.columns]
+        # --- EmaAlpha ---
+        enriched = EmaAlpha(df.copy(), metadata={"pair": "BTC/USDT"}).process()
+        ema_cols = ["ema_fast", "ema_slow", "ema_exit", "mean-volume"]
+        all_missing += [c for c in ema_cols if c not in enriched.columns]
+        result["details"]["ema"] = {
+            "rows": len(enriched),
+            "columns_added": ema_cols,
+            "ema_fast_last": round(float(enriched["ema_fast"].iloc[-1]), 2),
+            "ema_slow_last": round(float(enriched["ema_slow"].iloc[-1]), 2),
+        }
 
-        if missing:
+        # --- RsiAlpha ---
+        enriched = RsiAlpha(df.copy(), metadata={"pair": "BTC/USDT"}).process()
+        rsi_cols = ["rsi", "rsi_signal", "rsi_overbought", "rsi_oversold", "mean-volume"]
+        all_missing += [c for c in rsi_cols if c not in enriched.columns]
+        result["details"]["rsi"] = {
+            "rows": len(enriched),
+            "columns_added": rsi_cols,
+            "rsi_last": round(float(enriched["rsi"].iloc[-1]), 2),
+        }
+
+        # --- MacdAlpha ---
+        enriched = MacdAlpha(df.copy(), metadata={"pair": "BTC/USDT"}).process()
+        macd_cols = ["macd", "macd_signal", "macd_hist", "macd_hist_rising", "mean-volume"]
+        all_missing += [c for c in macd_cols if c not in enriched.columns]
+        result["details"]["macd"] = {
+            "rows": len(enriched),
+            "columns_added": macd_cols,
+            "macd_last": round(float(enriched["macd"].iloc[-1]), 2),
+        }
+
+        # --- BollingerAlpha ---
+        enriched = BollingerAlpha(df.copy(), metadata={"pair": "BTC/USDT"}).process()
+        bb_cols = ["bb_upper", "bb_middle", "bb_lower", "bb_width", "bb_pctb", "mean-volume"]
+        all_missing += [c for c in bb_cols if c not in enriched.columns]
+        result["details"]["bollinger"] = {
+            "rows": len(enriched),
+            "columns_added": bb_cols,
+            "bb_upper_last": round(float(enriched["bb_upper"].iloc[-1]), 2),
+            "bb_lower_last": round(float(enriched["bb_lower"].iloc[-1]), 2),
+        }
+
+        if all_missing:
             result["status"] = "fail"
-            result["error"] = f"Missing columns: {missing}"
+            result["error"] = f"Missing columns: {all_missing}"
         else:
             result["status"] = "pass"
-            result["details"] = {
-                "rows": len(enriched),
-                "columns_added": expected_cols,
-                "ema_fast_last": round(float(enriched["ema_fast"].iloc[-1]), 2),
-                "ema_slow_last": round(float(enriched["ema_slow"].iloc[-1]), 2),
-            }
+
     except Exception as e:
         result["status"] = "fail"
         result["error"] = str(e)
@@ -512,9 +548,11 @@ def run_benchmark(
         pass_count += 1
         print(detail("Status", status_pass()))
         ad = alpha_result.get("details", {})
-        print(detail("Rows processed", str(ad.get("rows", "?"))))
-        print(detail("EMA fast (last)", str(ad.get("ema_fast_last", "?"))))
-        print(detail("EMA slow (last)", str(ad.get("ema_slow_last", "?"))))
+        for alpha_name in ["ema", "rsi", "macd", "bollinger"]:
+            sub = ad.get(alpha_name, {})
+            if sub:
+                cols = ", ".join(sub.get("columns_added", []))
+                print(detail(f"  {alpha_name.upper()}", f"{sub.get('rows', '?')} rows — {cols}"))
     else:
         fail_count += 1
         print(detail("Status", f"{status_fail()} — {alpha_result.get('error', '')}"))
