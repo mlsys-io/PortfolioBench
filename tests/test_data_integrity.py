@@ -13,8 +13,8 @@ SAMPLE_FILES = [
     "BTC_USDT-1d.feather",
     "BTC_USDT-4h.feather",
     "BTC_USDT-5m.feather",
-    "AAPL_USDT-1d.feather",
-    "DJI_USDT-1d.feather",
+    "AAPL_USD-1d.feather",
+    "DJI_USD-1d.feather",
 ]
 
 
@@ -59,6 +59,7 @@ class TestDataIntegrity:
         files = glob.glob(os.path.join(DATA_DIR, "*.feather"))
         for f in files:
             basename = os.path.basename(f)
-            # Expected: {TICKER}_USDT-{timeframe}.feather
-            assert "_USDT-" in basename, f"Unexpected naming: {basename}"
+            # Expected: {TICKER}_USDT-{tf}.feather (crypto) or {TICKER}_USD-{tf}.feather (stocks/indices)
+            has_quote = "_USDT-" in basename or "_USD-" in basename
+            assert has_quote, f"Unexpected naming: {basename}"
             assert basename.endswith(".feather"), f"Wrong extension: {basename}"
