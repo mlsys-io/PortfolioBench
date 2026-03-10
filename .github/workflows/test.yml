@@ -1,0 +1,261 @@
+name: Auto Test
+
+on:
+  push:
+    branches: [main, develop, "feature/**", "claude/**"]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1: Lint & import checks (fast, no data needed)
+  # ---------------------------------------------------------------------------
+  lint:
+    name: Lint & Syntax Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install minimal dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pyflakes
+
+      - name: Check Python syntax (all project modules)
+        run: |
+          pyflakes alpha/ strategy/ portfolio/ user_data/strategies/ dataset/
+
+  # ---------------------------------------------------------------------------
+  # Job 2: Unit tests for pure-Python portfolio logic (no freqtrade needed)
+  # ---------------------------------------------------------------------------
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install scipy pytest
+          pip install -e .
+
+      - name: Run unit tests
+        run: pytest tests/ -v --tb=short
+
+  # ---------------------------------------------------------------------------
+  # Job 3: Strategy import validation (ensures all strategies load correctly)
+  # ---------------------------------------------------------------------------
+  strategy-import:
+    name: Strategy Import Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install system dependencies (TA-Lib)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential wget
+          wget https://github.com/ta-lib/ta-lib/releases/download/v0.6.4/ta-lib-0.6.4-src.tar.gz
+          tar -xzf ta-lib-0.6.4-src.tar.gz
+          cd ta-lib-0.6.4
+          ./configure --prefix=/usr
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install scipy
+          pip install -e .
+
+      - name: Validate all strategy imports
+        run: |
+          python -c "
+          import sys
+          errors = []
+
+          # Alpha modules
+          try:
+              from alpha.interface import IAlpha
+              print('OK: alpha.interface.IAlpha')
+          except Exception as e:
+              errors.append(f'alpha.interface: {e}')
+
+          try:
+              from alpha.SimpleEmaFactors import EmaAlpha
+              print('OK: alpha.SimpleEmaFactors.EmaAlpha')
+          except Exception as e:
+              errors.append(f'alpha.SimpleEmaFactors: {e}')
+
+          # Trading strategies
+          try:
+              from strategy.EmaCrossStrategy import EmaCrossStrategy
+              print('OK: strategy.EmaCrossStrategy')
+          except Exception as e:
+              errors.append(f'strategy.EmaCrossStrategy: {e}')
+
+          try:
+              from strategy.MacdAdxStrategy import MacdAdxStrategy
+              print('OK: strategy.MacdAdxStrategy')
+          except Exception as e:
+              errors.append(f'strategy.MacdAdxStrategy: {e}')
+
+          # Portfolio strategies
+          try:
+              from user_data.strategies.ONS import ONS_Portfolio
+              print('OK: user_data.strategies.ONS.ONS_Portfolio')
+          except Exception as e:
+              errors.append(f'user_data.strategies.ONS: {e}')
+
+          try:
+              from user_data.strategies.inv_vol import InverseVolatilityPortfolio
+              print('OK: user_data.strategies.inv_vol.InverseVolatilityPortfolio')
+          except Exception as e:
+              errors.append(f'user_data.strategies.inv_vol: {e}')
+
+          try:
+              from user_data.strategies.min_var import MinimumVariancePortfolio
+              print('OK: user_data.strategies.min_var.MinimumVariancePortfolio')
+          except Exception as e:
+              errors.append(f'user_data.strategies.min_var: {e}')
+
+          try:
+              from user_data.strategies.best_single_asset import BestSingleAssetPortfolio
+              print('OK: user_data.strategies.best_single_asset.BestSingleAssetPortfolio')
+          except Exception as e:
+              errors.append(f'user_data.strategies.best_single_asset: {e}')
+
+          # Portfolio pipeline
+          try:
+              from portfolio.PortfolioManagement import run_portfolio
+              print('OK: portfolio.PortfolioManagement.run_portfolio')
+          except Exception as e:
+              errors.append(f'portfolio.PortfolioManagement: {e}')
+
+          if errors:
+              print(f'\nFAILED: {len(errors)} import error(s):')
+              for err in errors:
+                  print(f'  - {err}')
+              sys.exit(1)
+          else:
+              print(f'\nAll imports passed.')
+          "
+
+  # ---------------------------------------------------------------------------
+  # Job 4: Portfolio pipeline smoke test (runs the standalone pipeline)
+  # ---------------------------------------------------------------------------
+  portfolio-pipeline:
+    name: Portfolio Pipeline Smoke Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install system dependencies (TA-Lib)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential wget
+          wget https://github.com/ta-lib/ta-lib/releases/download/v0.6.4/ta-lib-0.6.4-src.tar.gz
+          tar -xzf ta-lib-0.6.4-src.tar.gz
+          cd ta-lib-0.6.4
+          ./configure --prefix=/usr
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install scipy
+          pip install -e .
+
+      - name: Run standalone portfolio pipeline
+        run: python -m portfolio.PortfolioManagement
+
+  # ---------------------------------------------------------------------------
+  # Job 5: Backtest smoke tests (crypto-only, fast timerange)
+  # ---------------------------------------------------------------------------
+  backtest-smoke:
+    name: Backtest Smoke Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install system dependencies (TA-Lib)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential wget
+          wget https://github.com/ta-lib/ta-lib/releases/download/v0.6.4/ta-lib-0.6.4-src.tar.gz
+          tar -xzf ta-lib-0.6.4-src.tar.gz
+          cd ta-lib-0.6.4
+          ./configure --prefix=/usr
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install scipy
+          pip install -e .
+
+      - name: Backtest EmaCrossStrategy (crypto, 1d)
+        run: |
+          freqtrade backtesting \
+            --strategy EmaCrossStrategy \
+            --strategy-path ./strategy \
+            --timeframe 1d \
+            --timerange 20250501-20250601 \
+            --pairs BTC/USDT ETH/USDT
+
+      - name: Backtest MacdAdxStrategy (stocks, 1d)
+        run: |
+          freqtrade backtesting \
+            --strategy MacdAdxStrategy \
+            --strategy-path ./strategy \
+            --timeframe 1d \
+            --timerange 20250501-20250601 \
+            --pairs AAPL/USDT MSFT/USDT
+
+      - name: Backtest ONS_Portfolio (mixed, 5m, short range)
+        run: |
+          freqtrade backtesting \
+            --strategy ONS_Portfolio \
+            --strategy-path ./user_data/strategies \
+            --timeframe 5m \
+            --timerange 20260101-20260103 \
+            --pairs BTC/USDT ETH/USDT AAPL/USDT \
+            --dry-run-wallet 1000000
