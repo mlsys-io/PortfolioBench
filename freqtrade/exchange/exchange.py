@@ -78,8 +78,7 @@ from freqtrade.exchange.exchange_types import (
     Ticker,
     Tickers,
 )
-# HACK
-LeverageTier = dict
+from freqtrade.exchange.exchange_types import LeverageTier
 
 from freqtrade.exchange.exchange_utils import (
     ROUND,
@@ -668,14 +667,7 @@ class Exchange:
 
     async def _api_reload_markets(self, reload: bool = False) -> None:
         try:
-            # HACK: Use a short timeout (5s) so offline backtesting doesn't hang
-            import asyncio as _asyncio
-            await _asyncio.wait_for(
-                self._api_async.load_markets(reload=reload, params={}),
-                timeout=5.0
-            )
-        except (TimeoutError, _asyncio.TimeoutError) as e:
-            raise TemporaryError(f"Market loading timed out: {e}") from e
+            await self._api_async.load_markets(reload=reload, params={})
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
@@ -711,71 +703,28 @@ class Exchange:
         ):
             return None
         logger.debug("Performing scheduled market reload..")
-        exchange_loaded = False
         try:
             # on initial load, we retry 3 times to ensure we get the markets
-            # HACK: Use 0 retries so backtesting works offline without long delays
-            retries: int = 0
+            retries: int = 3 if force else 0
             # Reload async markets, then assign them to sync api
             retrier(self._load_async_markets, retries=retries)(reload=True)
             self._markets = self._api_async.markets
-            exchange_loaded = True
-        except (ccxt.BaseError, TemporaryError):
-            logger.warning("Could not load markets from exchange, will use locally injected pairs.")
 
-        try:
-            # HACK: Allow stocks to get custom data
-            # This also serves as a fallback when the exchange is unreachable:
-            # inject ALL configured pairs so backtesting works with local data.
-            whitelist = self._config.get('exchange', {}).get('pair_whitelist', [])
-            cli_pairs = self._config.get('pairs', [])
+            self._api.set_markets_from_exchange(self._api_async)
 
-            all_pairs = set(whitelist + cli_pairs)
-            for pair in all_pairs:
-                if pair not in self._markets:
-                    logger.info(f"Auto-injecting pair: {pair}")
-                    self._markets[pair] = {
-                        'symbol': pair,
-                        'base': pair.split('/')[0],
-                        'quote': pair.split('/')[1] if '/' in pair else 'USDT',
-                        # --- Make it valid for EVERYTHING ---
-                        'spot': True,
-                        'swap': True,       # Needed for Futures
-                        'future': True,     # Needed for Futures
-                        'linear': True,     # Needed for Futures
-                        'type': 'swap',     # Needed for Futures
-                        'contract': True,
-                        'active': True,
-                        # ------------------------------------
-                        'precision': {'amount': 8, 'price': 8},
-                        'limits': {
-                            'amount': {'min': 1e-8, 'max': 1e8},
-                            'price': {'min': 1e-8, 'max': 1e8},
-                            'cost': {'min': 1e-8, 'max': 1e8}
-                        },
-                        'info': {}
-                    }
-
-            if exchange_loaded:
-                self._api.set_markets_from_exchange(self._api_async)
-
-                # Assign options array, as it contains some temporary information from the exchange.
-                # ccxt does not implicitly copy options over in set_markets_from_exchange
-                self._api.options = self._api_async.options
-                if self._exchange_ws:
-                    # Set markets to avoid reloading on websocket api
-                    self._ws_async.set_markets_from_exchange(self._api_async)
-                    self._ws_async.options = self._api.options
-
-            # Also sync injected markets to the sync api
-            self._api.markets = self._markets
-
+            # Assign options array, as it contains some temporary information from the exchange.
+            # ccxt does not implicitly copy options over in set_markets_from_exchange
+            self._api.options = self._api_async.options
+            if self._exchange_ws:
+                # Set markets to avoid reloading on websocket api
+                self._ws_async.set_markets_from_exchange(self._api_async)
+                self._ws_async.options = self._api.options
             self._last_markets_refresh = dt_ts()
 
-            if exchange_loaded and is_initial and self._ft_has["needs_trading_fees"]:
+            if is_initial and self._ft_has["needs_trading_fees"]:
                 self._trading_fees = self.fetch_trading_fees()
 
-            if exchange_loaded and load_leverage_tiers and self.trading_mode == TradingMode.FUTURES:
+            if load_leverage_tiers and self.trading_mode == TradingMode.FUTURES:
                 self.fill_leverage_tiers()
         except (ccxt.BaseError, TemporaryError):
             logger.exception("Could not load markets.")
@@ -2489,20 +2438,14 @@ class Exchange:
             if self._api.markets is None or len(self._api.markets) == 0:
                 self._api.load_markets(params={})
 
-            # HACK: Allow custom fee for stocks
-            try:
-                return self._api.calculate_fee(
-                    symbol=symbol,
-                    type=order_type,
-                    side=side,
-                    amount=amount,
-                    price=price,
-                    takerOrMaker=taker_or_maker,
-                )["rate"]
-            except KeyError:
-                # Returns 0 for stocks
-                return 0.0
-            
+            return self._api.calculate_fee(
+                symbol=symbol,
+                type=order_type,
+                side=side,
+                amount=amount,
+                price=price,
+                takerOrMaker=taker_or_maker,
+            )["rate"]
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
@@ -3565,21 +3508,18 @@ class Exchange:
     @retrier_async
     async def get_market_leverage_tiers(self, symbol: str) -> tuple[str, list[dict]]:
         """Leverage tiers per symbol"""
-        # HACK: Bypassed for stocks
         try:
             tier = await self._api_async.fetch_market_leverage_tiers(symbol)
             return symbol, tier
-        except (ccxt.OperationFailed, ccxt.ExchangeError, ccxt.BaseError):
-            # If Binance fails to return tiers (because it's a stock), return a default 1x tier
-            return symbol, [{
-                "minNotional": 0,
-                "maxNotional": 100000000,
-                "maintenanceMarginRate": 0.0,
-                "maxLeverage": 1.0,  # Default leverage for stocks
-                "maintAmt": 0.0,
-                "info": {}
-            }]
-        
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except ccxt.OperationFailed as e:
+            raise TemporaryError(
+                f"Could not load leverage tiers for {symbol}. {e.__class__.__name__}. Message: {e}"
+            ) from e
+        except (ccxt.ExchangeError, ccxt.BaseError) as e:
+            raise OperationalException(e) from e
+
     def load_leverage_tiers(self) -> dict[str, list[dict]]:
         if self.trading_mode == TradingMode.FUTURES:
             if self.exchange_has("fetchLeverageTiers"):

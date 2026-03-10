@@ -4,7 +4,7 @@
 PortfolioBench is a multi-asset portfolio benchmarking framework wrapping freqtrade. It extends freqtrade to support US stocks, global indices, and portfolio optimization algorithms beyond cryptocurrency trading.
 
 ## Repository Layout
-- `freqtrade/` — Vendored freqtrade (only `exchange/exchange.py` is modified)
+- `freqtrade/` — Vendored freqtrade (unmodified; custom behaviour lives in `exchange/portfoliobench.py`)
 - `alpha/` — Pluggable alpha-factor interface (`IAlpha`) and implementations
 - `strategy/` — Freqtrade `IStrategy` implementations (EMA Cross, MACD+ADX)
 - `portfolio/` — Standalone portfolio construction pipeline
@@ -34,7 +34,13 @@ bash utils/backtest_tests.bash
 3. For portfolio algorithms: implement `IStrategy` with `position_adjustment_enable=True` in `user_data/strategies/`
 
 ## Adding New Assets
-Place feather files as `{TICKER}_USDT-{timeframe}.feather` in `user_data/data/binance/`. The exchange.py hack auto-injects synthetic market entries for non-crypto tickers.
+Place feather files as `{TICKER}_USDT-{timeframe}.feather` in `user_data/data/binance/`. The `Portfoliobench` exchange subclass auto-injects synthetic market entries for any pair not found on the real exchange.
 
-## Important: exchange.py Hacks
-`freqtrade/exchange/exchange.py` has 4 hacks (marked with `# HACK`) to support non-crypto assets. Do NOT update the vendored freqtrade without re-applying these patches.
+## Custom Exchange: `Portfoliobench`
+Non-crypto asset support is implemented via a clean exchange subclass at `freqtrade/exchange/portfoliobench.py` (extends `Binance`). It handles:
+- Offline-tolerant market loading (5s timeout, 0 retries, graceful fallback)
+- Synthetic market injection for stocks/indices (any pair in the whitelist or CLI)
+- Zero-fee fallback for assets without exchange fee data
+- Default 1x leverage tier for non-crypto assets
+
+The vendored `freqtrade/exchange/exchange.py` is **unmodified** — you can update the vendored freqtrade without re-applying patches. To use this exchange, set `"exchange": {"name": "portfoliobench"}` in your config.
