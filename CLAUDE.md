@@ -5,7 +5,7 @@ PortfolioBench is a multi-asset portfolio benchmarking framework wrapping freqtr
 
 ## Repository Layout
 - `freqtrade/` — Vendored freqtrade (unmodified; custom behaviour lives in `exchange/portfoliobench.py` and `exchange/polymarket.py`)
-- `alpha/` — Pluggable alpha-factor interface (`IAlpha`) and implementations (EmaAlpha, PolymarketAlpha)
+- `alpha/` — Pluggable alpha-factor interface (`IAlpha`) and implementations (EmaAlpha, RsiAlpha, MacdAlpha, BollingerAlpha, PolymarketAlpha)
 - `strategy/` — Freqtrade `IStrategy` implementations (EmaCross, MacdAdx, Ichimoku, RsiBollinger, StochasticCci, MlpSpeculative, Polymarket strategies)
 - `portfolio/` — Standalone portfolio construction pipeline
 - `dataset/` — Data management (stub)
