@@ -5,12 +5,13 @@ PortfolioBench is a multi-asset portfolio benchmarking framework wrapping freqtr
 
 ## Repository Layout
 - `freqtrade/` — Vendored freqtrade (unmodified; custom behaviour lives in `exchange/portfoliobench.py`)
-- `alpha/` — Pluggable alpha-factor interface (`IAlpha`) and implementations
-- `strategy/` — Freqtrade `IStrategy` implementations (EMA Cross, MACD+ADX)
+- `alpha/` — Pluggable alpha-factor interface (`IAlpha`) and implementations (EmaAlpha, PolymarketFactors)
+- `strategy/` — Freqtrade `IStrategy` implementations (EmaCross, MacdAdx, Ichimoku, RsiBollinger, StochasticCci, MlpSpeculative, Polymarket strategies)
 - `portfolio/` — Standalone portfolio construction pipeline
-- `user_data/strategies/` — Portfolio-optimization strategies (ONS, MinVar, InvVol, BestSingleAsset)
+- `dataset/` — Data management (stub)
+- `user_data/strategies/` — Portfolio-optimization strategies (ONS, MinVar, InvVol, BestSingleAsset, ExpGradient, MaxSharpe, RiskParity, Polymarket)
 - `user_data/data/binance/` — Pre-downloaded OHLCV feather files (119 instruments × 3 timeframes)
-- `utils/` — Bash scripts for backtesting
+- `utils/` — Bash scripts for backtesting, data generation, and testing
 
 ## Key Commands
 
@@ -27,6 +28,10 @@ python -m portfolio.PortfolioManagement
 # Run full test suite
 bash utils/backtest_tests.bash
 ```
+
+## Existing Strategies
+- **Trading** (in `strategy/`): EmaCross, MacdAdx, IchimokuCloud, RsiBollinger, StochasticCci, MlpSpeculative, PolymarketMeanReversion, PolymarketMomentum
+- **Portfolio** (in `user_data/strategies/`): ONS, InverseVol, MinVar, BestSingleAsset, ExpGradient, MaxSharpe, RiskParity, PolymarketPortfolio
 
 ## Adding New Strategies
 1. For alpha factors: implement `IAlpha.process()` in `alpha/`

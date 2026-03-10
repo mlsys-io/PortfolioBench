@@ -15,26 +15,46 @@ A **multi-asset portfolio benchmarking framework** built as a wrapper around [fr
 
 ```
 PortfolioBench/
-├── freqtrade/                  # Vendored freqtrade (only exchange/exchange.py is modified)
+├── freqtrade/                  # Vendored freqtrade (unmodified)
+│   └── exchange/
+│       └── portfoliobench.py   # Custom exchange subclass (extends Binance)
 ├── alpha/                      # Pluggable alpha-factor system
 │   ├── interface.py            # IAlpha abstract base class
-│   └── SimpleEmaFactors.py     # EMA fast/slow/exit + rolling mean volume
+│   ├── SimpleEmaFactors.py     # EMA fast/slow/exit + rolling mean volume
+│   └── PolymarketFactors.py    # Polymarket prediction-market factors
 ├── strategy/                   # Freqtrade IStrategy implementations
 │   ├── EmaCrossStrategy.py     # EMA crossover entry/exit strategy
-│   └── MacdAdxStrategy.py      # MACD + ADX trend-confirmation strategy
+│   ├── MacdAdxStrategy.py      # MACD + ADX trend-confirmation strategy
+│   ├── IchimokuCloudStrategy.py        # Ichimoku Cloud strategy
+│   ├── RsiBollingerStrategy.py         # RSI + Bollinger Bands strategy
+│   ├── StochasticCciStrategy.py        # Stochastic + CCI strategy
+│   ├── MlpSpeculativeStrategy.py       # MLP-based speculative strategy
+│   ├── PolymarketMeanReversionStrategy.py  # Polymarket mean reversion
+│   └── PolymarketMomentumStrategy.py       # Polymarket momentum
 ├── portfolio/                  # Standalone portfolio pipeline
 │   └── PortfolioManagement.py  # 7-step: load → alpha → signals → ONS → blend → backtest → metrics
+├── dataset/                    # Data management (stub)
+│   └── main.py
 ├── user_data/
 │   ├── config.json             # Backtesting configuration
 │   ├── strategies/             # Portfolio-optimization strategies
 │   │   ├── ONS.py              # Online Newton Step rebalancing
 │   │   ├── inv_vol.py          # Inverse Volatility allocation
 │   │   ├── min_var.py          # Minimum Variance allocation
-│   │   └── best_single_asset.py # Momentum rotation (winner-takes-all)
+│   │   ├── best_single_asset.py # Momentum rotation (winner-takes-all)
+│   │   ├── exp_gradient.py     # Exponential Gradient allocation
+│   │   ├── max_sharpe.py       # Maximum Sharpe Ratio optimization
+│   │   ├── risk_parity.py      # Risk Parity allocation
+│   │   └── polymarket_portfolio.py # Polymarket portfolio strategy
 │   └── data/binance/           # Pre-downloaded OHLCV data (357 feather files)
 └── utils/
     ├── backtest_script.bash    # Simple CLI backtest launcher
-    └── backtest_tests.bash     # Comprehensive test harness
+    ├── backtest_tests.bash     # Comprehensive test harness
+    ├── backtest_polymarket.bash        # Polymarket backtesting script
+    ├── download_polymarket_data.py     # Polymarket data downloader
+    ├── generate_polymarket_test_data.py # Polymarket test data generator
+    ├── generate_test_data.py           # General test data generator
+    └── test.py                         # Test runner
 ```
 
 ## Quick Start
@@ -87,6 +107,12 @@ Runs 4 asset categories (crypto, stocks, indices, mixed) across 3 timeframes = 1
 |----------|------|-------------|-------------|
 | **EmaCrossStrategy** | Trend-following | EMA fast crosses above EMA slow + volume filter | EMA exit crosses below EMA fast |
 | **MacdAdxStrategy** | Trend-confirmation | MACD > signal + ADX > 25 + volume filter | MACD < signal + ADX > 25 |
+| **IchimokuCloudStrategy** | Trend-following | Ichimoku Cloud signals | Ichimoku Cloud reversal |
+| **RsiBollingerStrategy** | Mean-reversion | RSI + Bollinger Bands | RSI + Bollinger Bands reversal |
+| **StochasticCciStrategy** | Oscillator-based | Stochastic + CCI signals | Stochastic + CCI reversal |
+| **MlpSpeculativeStrategy** | ML-based | MLP model predictions | MLP model predictions |
+| **PolymarketMeanReversionStrategy** | Mean-reversion | Polymarket mean reversion signals | Reversion exit |
+| **PolymarketMomentumStrategy** | Momentum | Polymarket momentum signals | Momentum exit |
 
 ## Portfolio Algorithms
 
@@ -96,6 +122,10 @@ Runs 4 asset categories (crypto, stocks, indices, mixed) across 3 timeframes = 1
 | **Inverse Volatility** | Weight proportional to 1/volatility | Monthly | All pairs |
 | **Minimum Variance** | Inverse-covariance weighting | Monthly | All pairs |
 | **Best Single Asset** | Momentum rotation (winner-takes-all) | Monthly | 1 pair |
+| **Exponential Gradient** | Multiplicative weight update | Per-candle | All pairs |
+| **Maximum Sharpe** | Sharpe ratio optimization | Monthly | All pairs |
+| **Risk Parity** | Equal risk contribution | Monthly | All pairs |
+| **Polymarket Portfolio** | Prediction-market weighted | Monthly | All pairs |
 
 ## Asset Universe
 
@@ -111,11 +141,11 @@ PortfolioBench supports systematic benchmarking across multiple dimensions:
 
 | Dimension | Values |
 |-----------|--------|
-| Strategies | EmaCross, MacdAdx, ONS, InverseVol, MinVar, BestSingleAsset |
+| Strategies | EmaCross, MacdAdx, Ichimoku, RsiBollinger, StochasticCci, MlpSpeculative, ONS, InverseVol, MinVar, BestSingleAsset, ExpGradient, MaxSharpe, RiskParity |
 | Asset classes | Crypto, US Stocks, Global Indices, Mixed |
 | Timeframes | 5m, 4h, 1d |
 
-This produces up to **72 benchmark configurations** (6 strategies x 4 asset classes x 3 timeframes).
+This produces up to **156 benchmark configurations** (13 strategies x 4 asset classes x 3 timeframes).
 
 **Metrics**: Total return, annualized return, Sharpe ratio, max drawdown, number of trades, win rate, profit factor.
 
@@ -148,7 +178,7 @@ Implement `IStrategy` with `position_adjustment_enable = True` in `user_data/str
 3. Place in `user_data/data/binance/`
 4. Add pairs to the config whitelist or pass via `--pairs`
 
-The `exchange.py` hack will auto-inject synthetic market entries for non-crypto tickers.
+The `Portfoliobench` exchange subclass will auto-inject synthetic market entries for non-crypto tickers.
 
 ## Hyperparameter Optimization
 
@@ -165,9 +195,9 @@ freqtrade hyperopt \
 
 ## How It Works
 
-PortfolioBench achieves multi-asset support with **minimal invasiveness**: only `freqtrade/exchange/exchange.py` is patched (4 surgical hacks marked with `# HACK`) to trick freqtrade into accepting non-crypto tickers. All new functionality is added through freqtrade's existing extension points (strategies, callbacks, data format).
+PortfolioBench achieves multi-asset support with **minimal invasiveness**: a clean `Portfoliobench` exchange subclass (`freqtrade/exchange/portfoliobench.py`) extends Binance to handle non-crypto tickers, while the vendored `freqtrade/exchange/exchange.py` remains **unmodified**. All new functionality is added through freqtrade's existing extension points (strategies, callbacks, data format).
 
-**Important**: Do NOT update the vendored freqtrade without re-applying these patches.
+To use the custom exchange, set `"exchange": {"name": "portfoliobench"}` in your config.
 
 ## Limitations
 
