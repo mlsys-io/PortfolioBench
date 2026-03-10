@@ -1,75 +1,24 @@
 # PortfolioBench
 
-A **multi-asset portfolio benchmarking framework** built as a wrapper around [freqtrade](https://github.com/freqtrade/freqtrade). PortfolioBench extends freqtrade's cryptocurrency-focused backtesting engine to support **US equities, global market indices, and mixed-asset portfolios**, while adding pluggable alpha-factor interfaces, academic portfolio-optimization algorithms, and a standalone portfolio-construction pipeline.
+A multi-asset portfolio benchmarking framework for backtesting trading strategies and portfolio allocation algorithms across **cryptocurrencies**, **US equities**, **global indices**, and **event prediction markets** (Polymarket).
 
-## Key Capabilities
+PortfolioBench ships with 119 instruments, 16 strategies, and a full benchmarking suite — so you can evaluate portfolio ideas out of the box.
 
-- **Multi-asset backtesting** — Crypto, US stocks (~100 tickers), and global indices (DJI, S&P 500, FTSE, Nikkei, etc.)
-- **8 portfolio algorithms** — ONS, Minimum Variance, Inverse Volatility, Best Single Asset, Exponential Gradient, Maximum Sharpe, Risk Parity, Polymarket Portfolio
-- **8 trading strategies** — EMA Crossover, MACD+ADX, Ichimoku Cloud, RSI+Bollinger, Stochastic+CCI, MLP Speculative, Polymarket Mean Reversion, Polymarket Momentum
-- **Alpha factor abstraction** — Decoupled indicator computation via `IAlpha` interface (EmaAlpha, PolymarketAlpha)
-- **Blended portfolio construction** — Standalone pipeline combining ONS + EMA + Equal-Weight
-- **Automated benchmarking** — Scripts to run strategies across asset classes and timeframes
-- **119 instruments** across 3 timeframes (5m, 4h, 1d) with pre-downloaded OHLCV data (357 feather files)
+---
 
-## Repository Layout
+## What You Can Do
 
-```
-PortfolioBench/
-├── freqtrade/                  # Vendored freqtrade (unmodified)
-│   └── exchange/
-│       ├── portfoliobench.py   # Custom exchange subclass (extends Binance)
-│       └── polymarket.py       # Polymarket exchange subclass
-├── alpha/                      # Pluggable alpha-factor system
-│   ├── interface.py            # IAlpha abstract base class
-│   ├── SimpleEmaFactors.py     # EMA fast/slow/exit + rolling mean volume
-│   └── PolymarketFactors.py    # Polymarket prediction-market factors
-├── strategy/                   # Freqtrade IStrategy implementations (8 strategies)
-│   ├── EmaCrossStrategy.py     # EMA crossover entry/exit strategy
-│   ├── MacdAdxStrategy.py      # MACD + ADX trend-confirmation strategy
-│   ├── IchimokuCloudStrategy.py        # Ichimoku Cloud strategy
-│   ├── RsiBollingerStrategy.py         # RSI + Bollinger Bands strategy
-│   ├── StochasticCciStrategy.py        # Stochastic + CCI strategy
-│   ├── MlpSpeculativeStrategy.py       # MLP-based speculative strategy
-│   ├── mlp_speculative_model/          # MLP model utilities
-│   ├── PolymarketMeanReversionStrategy.py  # Polymarket mean reversion
-│   └── PolymarketMomentumStrategy.py       # Polymarket momentum
-├── portfolio/                  # Standalone portfolio pipeline
-│   └── PortfolioManagement.py  # 7-step: load → alpha → signals → ONS → blend → backtest → metrics
-├── dataset/                    # Data management (stub)
-│   └── main.py
-├── tests/                      # Unit and integration tests
-│   ├── test_alpha.py           # Alpha factor tests
-│   ├── test_data_integrity.py  # Data integrity tests
-│   └── test_portfolio_management.py  # Portfolio pipeline tests
-├── benchmark.py                # Single strategy benchmarking script
-├── benchmark_all.py            # Full benchmarking matrix runner
-├── user_data/
-│   ├── config.json             # Backtesting configuration (portfoliobench exchange)
-│   ├── config_polymarket.json  # Polymarket backtesting configuration
-│   ├── strategies/             # Portfolio-optimization strategies (8 algorithms)
-│   │   ├── ONS.py              # Online Newton Step rebalancing
-│   │   ├── inv_vol.py          # Inverse Volatility allocation
-│   │   ├── min_var.py          # Minimum Variance allocation
-│   │   ├── best_single_asset.py # Momentum rotation (winner-takes-all)
-│   │   ├── exp_gradient.py     # Exponential Gradient allocation
-│   │   ├── max_sharpe.py       # Maximum Sharpe Ratio optimization
-│   │   ├── risk_parity.py      # Risk Parity allocation
-│   │   └── polymarket_portfolio.py # Polymarket portfolio strategy
-│   └── data/binance/           # Pre-downloaded OHLCV data (357 feather files)
-└── utils/
-    ├── backtest_script.bash    # Simple CLI backtest launcher
-    ├── backtest_tests.bash     # Comprehensive test harness
-    ├── backtest_polymarket.bash        # Polymarket backtesting script
-    ├── download_polymarket_data.py     # Polymarket data downloader
-    ├── generate_polymarket_test_data.py # Polymarket test data generator
-    ├── generate_test_data.py           # General test data generator
-    └── test.py                         # Test runner
-```
+- **Backtest trading strategies** (EMA crossover, MACD, Ichimoku, RSI+Bollinger, MLP, and more) on any supported asset
+- **Compare portfolio algorithms** (Online Newton Step, Risk Parity, Max Sharpe, Minimum Variance, etc.) head-to-head
+- **Trade prediction markets** — backtest strategies on Polymarket binary outcome contracts (YES/NO shares priced $0–$1)
+- **Mix asset classes** — build and test portfolios that span crypto, stocks, indices, and event contracts in a single run
+- **Benchmark everything** — run all 16 strategies across 4 asset classes and 3 timeframes with one command
+
+---
 
 ## Quick Start
 
-### Backtest a Trading Strategy
+### 1. Backtest a Trading Strategy
 
 ```bash
 freqtrade backtesting \
@@ -80,7 +29,7 @@ freqtrade backtesting \
     --pairs BTC/USDT ETH/USDT SOL/USDT XRP/USDT
 ```
 
-### Backtest a Portfolio Strategy
+### 2. Backtest a Portfolio Algorithm
 
 ```bash
 freqtrade backtesting \
@@ -92,105 +41,144 @@ freqtrade backtesting \
     --dry-run-wallet 1000000
 ```
 
-### Run the Standalone Portfolio Pipeline
+### 3. Run the Standalone Portfolio Pipeline
 
 ```bash
 python -m portfolio.PortfolioManagement
 ```
 
-This runs a 7-step pipeline (load data, generate indicators, compute signals, run ONS, set equal-weight, blend strategies, backtest) with default parameters:
-- Pairs: BTC/USDT, ETH/USDT, SOL/USDT, XRP/USDT, MSFT/USDT
-- Blend: 34% equal-weight + 33% ONS + 33% EMA
-- Initial capital: $10,000
+Runs a 7-step pipeline: load data, generate indicators, compute signals, run ONS, set equal-weight, blend strategies, and backtest. Defaults to a 34% equal-weight + 33% ONS + 33% EMA blend on BTC, ETH, SOL, XRP, and MSFT.
 
-### Run the Full Test Suite
+### 4. Backtest a Polymarket Strategy
 
 ```bash
-bash utils/backtest_tests.bash
+freqtrade backtesting \
+    --strategy PolymarketMomentumStrategy \
+    --strategy-path ./strategy \
+    --timeframe 5m \
+    --timerange 20260101-20260108 \
+    --pairs TRUMP-WIN-YES/USDT ETH-10K-NO/USDT
 ```
 
-Runs 4 asset categories (crypto, stocks, indices, mixed) across 3 timeframes = 12 test configurations.
+Polymarket contracts are binary outcomes priced between $0 and $1. Each event has complementary YES/NO contracts that settle at exactly $0 or $1.
+
+---
+
+## Run the Full Benchmark
+
+The benchmark suite tests every layer of the framework: data integrity, alpha factors, the portfolio pipeline, and all strategy backtests.
+
+### Full run (all strategies, all assets, all timeframes)
+
+```bash
+python benchmark.py
+```
+
+### Quick smoke test
+
+```bash
+python benchmark.py --quick
+```
+
+### Only trading strategies or only portfolio strategies
+
+```bash
+python benchmark.py --trading-only
+python benchmark.py --portfolio-only
+```
+
+### Export results to JSON
+
+```bash
+python benchmark.py --export report.json
+```
+
+### Advanced benchmark with filters
+
+```bash
+python benchmark_all.py --timeframes 5m 4h --categories crypto stocks --json-output results.json
+```
+
+### Benchmark Matrix
+
+| Dimension      | Options |
+|----------------|---------|
+| **Trading strategies** (8) | EmaCross, MacdAdx, Ichimoku, RsiBollinger, StochasticCci, MlpSpeculative, PolymarketMeanReversion, PolymarketMomentum |
+| **Portfolio algorithms** (8) | ONS, InverseVol, MinVar, BestSingleAsset, ExpGradient, MaxSharpe, RiskParity, PolymarketPortfolio |
+| **Asset classes** (4) | Crypto, US Stocks, Global Indices, Mixed |
+| **Timeframes** (3) | 5m, 4h, 1d |
+
+This gives up to **192 benchmark configurations** (16 strategies x 4 asset classes x 3 timeframes).
+
+**Reported metrics**: total return, annualized return, Sharpe ratio, max drawdown, number of trades, win rate, profit factor.
+
+---
 
 ## Trading Strategies
 
 | Strategy | Type | Entry Signal | Exit Signal |
 |----------|------|-------------|-------------|
-| **EmaCrossStrategy** | Trend-following | EMA fast crosses above EMA slow + volume filter | EMA exit crosses below EMA fast |
-| **MacdAdxStrategy** | Trend-confirmation | MACD > signal + ADX > 25 + volume filter | MACD < signal + ADX > 25 |
-| **IchimokuCloudStrategy** | Trend-following | Ichimoku Cloud signals | Ichimoku Cloud reversal |
-| **RsiBollingerStrategy** | Mean-reversion | RSI + Bollinger Bands | RSI + Bollinger Bands reversal |
-| **StochasticCciStrategy** | Oscillator-based | Stochastic + CCI signals | Stochastic + CCI reversal |
-| **MlpSpeculativeStrategy** | ML-based | MLP model predictions | MLP model predictions |
-| **PolymarketMeanReversionStrategy** | Mean-reversion | Polymarket mean reversion signals | Reversion exit |
-| **PolymarketMomentumStrategy** | Momentum | Polymarket momentum signals | Momentum exit |
+| **EmaCross** | Trend-following | EMA fast crosses above EMA slow + volume filter | EMA exit crosses below EMA fast |
+| **MacdAdx** | Trend-confirmation | MACD > signal + ADX > 25 + volume filter | MACD < signal + ADX > 25 |
+| **IchimokuCloud** | Trend-following | Ichimoku Cloud signals | Ichimoku Cloud reversal |
+| **RsiBollinger** | Mean-reversion | RSI + Bollinger Bands | RSI + Bollinger Bands reversal |
+| **StochasticCci** | Oscillator-based | Stochastic + CCI signals | Stochastic + CCI reversal |
+| **MlpSpeculative** | ML-based | MLP model predictions | MLP model predictions |
+| **PolymarketMeanReversion** | Mean-reversion | Polymarket contract reversion signals | Reversion exit |
+| **PolymarketMomentum** | Momentum | Polymarket contract momentum signals | Momentum exit |
 
 ## Portfolio Algorithms
 
-| Strategy | Allocation Method | Rebalance Frequency | Positions |
-|----------|------------------|---------------------|-----------|
-| **ONS** | Online convex optimization (Newton Step) | Per-candle | All pairs |
-| **Inverse Volatility** | Weight proportional to 1/volatility | Monthly | All pairs |
-| **Minimum Variance** | Inverse-covariance weighting | Monthly | All pairs |
-| **Best Single Asset** | Momentum rotation (winner-takes-all) | Monthly | 1 pair |
-| **Exponential Gradient** | Multiplicative weight update | Per-candle | All pairs |
-| **Maximum Sharpe** | Sharpe ratio optimization | Monthly | All pairs |
-| **Risk Parity** | Equal risk contribution | Monthly | All pairs |
-| **Polymarket Portfolio** | Prediction-market weighted | Monthly | All pairs |
+| Algorithm | Method | Rebalance Frequency |
+|-----------|--------|---------------------|
+| **ONS** | Online convex optimization (Newton Step) | Per-candle |
+| **Inverse Volatility** | Weight proportional to 1/volatility | Monthly |
+| **Minimum Variance** | Inverse-covariance weighting | Monthly |
+| **Best Single Asset** | Momentum rotation (winner-takes-all) | Monthly |
+| **Exponential Gradient** | Multiplicative weight update | Per-candle |
+| **Maximum Sharpe** | Sharpe ratio optimization | Monthly |
+| **Risk Parity** | Equal risk contribution | Monthly |
+| **Polymarket Portfolio** | Prediction-market weighted allocation | Monthly |
+
+---
 
 ## Asset Universe
 
-- **Cryptocurrencies (10)**: BTC, ETH, SOL, XRP, DOGE, BNB, ADA, TRX, STETH, BCH
-- **US Stocks (~100)**: AAPL, MSFT, NVDA, GOOG, AMZN, META, TSLA, JPM, and more (roughly S&P 100)
-- **Global Indices (9)**: DJI, GSPC (S&P 500), IXIC (Nasdaq), RUT (Russell 2000), FTSE, N225 (Nikkei), HSI (Hang Seng), STOXX50E, VIX
+| Class | Count | Examples |
+|-------|-------|---------|
+| **Crypto** | 10 | BTC, ETH, SOL, XRP, DOGE, BNB, ADA, TRX, STETH, BCH |
+| **US Stocks** | ~100 | AAPL, MSFT, NVDA, GOOG, AMZN, META, TSLA, JPM, ... |
+| **Global Indices** | 9 | DJI, S&P 500, Nasdaq, Russell 2000, FTSE, Nikkei, Hang Seng, STOXX 50, VIX |
+| **Prediction Markets** | varies | Polymarket binary outcome contracts (YES/NO) |
 
-All data is stored as feather files in `user_data/data/binance/`:
-- Crypto: `{TICKER}_USDT-{timeframe}.feather` (e.g. `BTC_USDT-1d.feather`)
-- Stocks & indices: `{TICKER}_USD-{timeframe}.feather` (e.g. `AAPL_USD-1d.feather`)
+All instruments are available at 3 timeframes (5m, 4h, 1d) as pre-downloaded OHLCV feather files — **357 files total**.
 
-## Benchmarking
+---
 
-PortfolioBench supports systematic benchmarking across multiple dimensions:
+## Event Prediction Markets (Polymarket)
 
-| Dimension | Values |
-|-----------|--------|
-| Strategies | EmaCross, MacdAdx, Ichimoku, RsiBollinger, StochasticCci, MlpSpeculative, PolymarketMeanReversion, PolymarketMomentum, ONS, InverseVol, MinVar, BestSingleAsset, ExpGradient, MaxSharpe, RiskParity, PolymarketPortfolio |
-| Asset classes | Crypto, US Stocks, Global Indices, Mixed |
-| Timeframes | 5m, 4h, 1d |
+PortfolioBench supports backtesting on **Polymarket**, a decentralized prediction market where binary outcome contracts trade between $0 and $1.
 
-This produces up to **192 benchmark configurations** (16 strategies x 4 asset classes x 3 timeframes).
+**How it works**:
+- Each event (e.g., "Will ETH reach $10K?") has two contracts: YES and NO
+- Contract prices represent the market's implied probability of the outcome
+- YES + NO prices sum to approximately $1
+- Contracts settle at exactly $0 or $1 when the event resolves
+- Profit = (settlement price - entry price) x shares
 
-**Metrics**: Total return, annualized return, Sharpe ratio, max drawdown, number of trades, win rate, profit factor.
+**Pair convention**: `{EVENT_SLUG}-{YES|NO}/USDT` (e.g., `TRUMP-WIN-YES/USDT`)
 
-## Extending PortfolioBench
+**Included strategies**:
+- `PolymarketMomentumStrategy` — trades momentum in contract prices
+- `PolymarketMeanReversionStrategy` — trades mean reversion in contract prices
+- `PolymarketPortfolio` — portfolio allocation across multiple prediction market contracts
 
-### Adding a New Alpha Factor
-
-```python
-# alpha/MyAlpha.py
-from alpha.interface import IAlpha
-
-class MyAlpha(IAlpha):
-    def process(self):
-        self.dataframe["my_indicator"] = ...
-        return self.dataframe
+**Config**: use `user_data/config_polymarket.json` or run:
+```bash
+bash utils/backtest_polymarket.bash
 ```
 
-### Adding a New Trading Strategy
-
-Implement `IStrategy` in `strategy/` with `populate_indicators`, `populate_entry_trend`, and `populate_exit_trend`.
-
-### Adding a New Portfolio Algorithm
-
-Implement `IStrategy` with `position_adjustment_enable = True` in `user_data/strategies/`. Use `custom_stake_amount()` and `adjust_trade_position()` for rebalancing.
-
-### Adding New Assets
-
-1. Prepare OHLCV data as feather files with columns: `date, open, high, low, close, volume`
-2. Name files as `{TICKER}_USDT-{timeframe}.feather` (crypto) or `{TICKER}_USD-{timeframe}.feather` (stocks/indices)
-3. Place in `user_data/data/binance/`
-4. Add pairs to the config whitelist or pass via `--pairs`
-
-The `Portfoliobench` exchange subclass will auto-inject synthetic market entries for non-crypto tickers.
+---
 
 ## Hyperparameter Optimization
 
@@ -205,15 +193,65 @@ freqtrade hyperopt \
     --epochs 100
 ```
 
-## How It Works
+---
 
-PortfolioBench achieves multi-asset support with **minimal invasiveness**: a clean `Portfoliobench` exchange subclass (`freqtrade/exchange/portfoliobench.py`) extends Binance to handle non-crypto tickers, while the vendored `freqtrade/exchange/exchange.py` remains **unmodified**. All new functionality is added through freqtrade's existing extension points (strategies, callbacks, data format).
+## Extending PortfolioBench
 
-To use the custom exchange, set `"exchange": {"name": "portfoliobench"}` in your config.
+### Add a new alpha factor
 
-## Limitations
+```python
+# alpha/MyAlpha.py
+from alpha.interface import IAlpha
 
-- Long-only strategies (no short selling)
-- Zero transaction costs for stocks (unrealistic for live trading)
-- Backtesting only (exchange hacks would fail in live trading)
-- All data must use Binance naming convention
+class MyAlpha(IAlpha):
+    def process(self):
+        self.dataframe["my_indicator"] = ...
+        return self.dataframe
+```
+
+### Add a new trading strategy
+
+Implement `IStrategy` in `strategy/` with `populate_indicators`, `populate_entry_trend`, and `populate_exit_trend`.
+
+### Add a new portfolio algorithm
+
+Implement `IStrategy` with `position_adjustment_enable = True` in `user_data/strategies/`. Use `custom_stake_amount()` and `adjust_trade_position()` for rebalancing.
+
+### Add new assets
+
+1. Prepare OHLCV data as feather files with columns: `date, open, high, low, close, volume`
+2. Name files: `{TICKER}_USDT-{timeframe}.feather` (crypto) or `{TICKER}_USD-{timeframe}.feather` (stocks/indices)
+3. Place in `user_data/data/binance/`
+4. Pass via `--pairs` or add to the config whitelist
+
+New tickers are automatically recognized — no exchange configuration needed.
+
+---
+
+## Repository Layout
+
+```
+PortfolioBench/
+├── strategy/                  # 8 trading strategies (IStrategy implementations)
+├── user_data/strategies/      # 8 portfolio algorithms
+├── alpha/                     # Pluggable alpha factors (IAlpha interface)
+├── portfolio/                 # Standalone portfolio construction pipeline
+├── freqtrade/exchange/
+│   ├── portfoliobench.py      # Multi-asset exchange (extends Binance)
+│   └── polymarket.py          # Polymarket prediction market exchange
+├── benchmark.py               # Benchmarking suite with formatted reports
+├── benchmark_all.py           # Full benchmark matrix runner
+├── tests/                     # Unit and integration tests
+├── user_data/data/binance/    # 357 pre-downloaded OHLCV feather files
+└── utils/                     # Bash helpers for backtesting and data generation
+```
+
+## Tests
+
+```bash
+# Run the full test harness (4 asset categories x 3 timeframes = 12 configs)
+bash utils/backtest_tests.bash
+
+# Run unit tests directly
+python -m pytest tests/ -v
+```
