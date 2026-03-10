@@ -139,6 +139,7 @@ Documentation = "https://freqtrade.io"
 
 [project.scripts]
 freqtrade = "freqtrade.main:main"
+download = "dataset.main:main"
 strategy_test = "utils.test:main"
 
 
