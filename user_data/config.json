@@ -1,7 +1,7 @@
 {
     "$schema": "https://schema.freqtrade.io/schema.json",
     "max_open_trades": 5,
-    "stake_currency": "USDT",
+    "stake_currency": "USD",
     "stake_amount": "unlimited",
     "tradable_balance_ratio": 1,
     "fiat_display_currency": "USD",
@@ -44,7 +44,7 @@
             "ETH/USDT",
             "SOL/USDT",
             "XRP/USDT",
-            "MSFT/USDT"
+            "MSFT/USD"
         ],
         "pair_blacklist": [
             "BNB/.*"

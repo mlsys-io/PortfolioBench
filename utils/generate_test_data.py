@@ -47,7 +47,7 @@ def main():
         if tf not in tf_periods:
             continue
 
-        ticker = pair_str.replace('_USDT', '')
+        ticker = pair_str.replace('_USDT', '').replace('_USD', '')
         period_ms = tf_periods[tf]
 
         timestamps = list(range(start_ms, end_ms, period_ms))

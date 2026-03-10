@@ -11,7 +11,7 @@ Key differences from crypto/stock trading:
   - There is no "volume" in the traditional sense; liquidity comes from the CLOB
   - Profit = (settlement_price - entry_price) * shares
 
-Pair convention:  {EVENT_SLUG}-{YES|NO}/USDT
+Pair convention:  {EVENT_SLUG}-{YES|NO}/USDT  (Polymarket contracts use USDT)
   e.g. "TRUMP-WIN-YES/USDT", "ETH-10K-NO/USDT"
 """
 

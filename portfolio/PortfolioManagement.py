@@ -386,7 +386,7 @@ def run_portfolio(
     if data_dir is None:
         data_dir = os.path.join(PROJECT_ROOT, "user_data", "data", "binance")
     if pairs is None:
-        pairs = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT", "MSFT/USDT"]
+        pairs = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT", "MSFT/USD"]
 
     # Step 1: Load raw OHLCV data
     print("=" * 60)
