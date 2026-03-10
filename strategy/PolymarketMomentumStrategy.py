@@ -8,12 +8,10 @@ Designed for contracts where information is gradually incorporated
 (e.g., election polls, economic forecasts).
 """
 
-import numpy as np
 import pandas as pd
 from datetime import datetime
-from typing import Optional
 
-from freqtrade.strategy import IStrategy, Trade
+from freqtrade.strategy import IStrategy
 
 from alpha.PolymarketFactors import PolymarketAlpha
 

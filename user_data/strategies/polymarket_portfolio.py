@@ -13,10 +13,9 @@ The strategy estimates "fair probability" using momentum-adjusted price
 and sizes positions based on perceived edge vs market price.
 """
 
-import numpy as np
 import pandas as pd
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 import logging
 
 from freqtrade.strategy import IStrategy
@@ -80,8 +79,6 @@ class PolymarketPortfolio(IStrategy):
     def populate_indicators(self, dataframe: pd.DataFrame, metadata: dict) -> pd.DataFrame:
         if not hasattr(self, "_weight_cache"):
             self._weight_cache = {}
-
-        current_pair = metadata["pair"]
 
         # Core indicators
         close = dataframe["close"]

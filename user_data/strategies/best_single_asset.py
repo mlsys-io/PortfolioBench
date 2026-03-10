@@ -1,7 +1,6 @@
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
 import pandas as pd
-import numpy as np
 
 
 class BestSingleAssetPortfolio(IStrategy):
