@@ -2,6 +2,10 @@
 
 Extends Binance to support non-crypto assets (US stocks, global indices)
 for offline backtesting. This avoids patching the vendored exchange.py.
+
+Quote-currency convention:
+  - Cryptocurrency pairs use USDT  (e.g. BTC/USDT, ETH/USDT)
+  - US stocks and global indices use USD (e.g. AAPL/USD, DJI/USD)
 """
 
 import asyncio
@@ -21,13 +25,32 @@ from freqtrade.util.datetime_helpers import dt_ts
 
 logger = logging.getLogger(__name__)
 
+# Recognised cryptocurrency base tickers.  Everything else is treated as a
+# stock or index and quoted in USD rather than USDT.
+CRYPTO_BASES: set[str] = {
+    "BTC", "ETH", "SOL", "XRP", "ADA", "BNB", "BCH", "DOGE", "STETH", "TRX",
+}
+
+
+def is_crypto_pair(pair: str) -> bool:
+    """Return True if *pair* is a cryptocurrency pair (quoted in USDT)."""
+    base = pair.split("/")[0]
+    return base in CRYPTO_BASES
+
+
+def default_quote(pair: str) -> str:
+    """Return the appropriate quote currency for *pair*."""
+    if "/" in pair:
+        return pair.split("/")[1]
+    return "USDT" if is_crypto_pair(pair) else "USD"
+
 
 def _synthetic_market(pair: str) -> dict:
     """Build a synthetic market entry so freqtrade treats any pair as tradeable."""
     return {
         "symbol": pair,
         "base": pair.split("/")[0],
-        "quote": pair.split("/")[1] if "/" in pair else "USDT",
+        "quote": default_quote(pair),
         "spot": True,
         "swap": True,
         "future": True,
@@ -145,6 +168,38 @@ class Portfoliobench(Binance):
             if pair not in self._markets:
                 logger.info("Auto-injecting pair: %s", pair)
                 self._markets[pair] = _synthetic_market(pair)
+
+    # ------------------------------------------------------------------
+    # Validation — accept both USD and USDT as stake-compatible quotes
+    # ------------------------------------------------------------------
+
+    def validate_stakecurrency(self, stake_currency: str) -> None:
+        """Skip the strict quote-currency check.
+
+        PortfolioBench intentionally mixes USD (stocks/indices) and USDT
+        (crypto) quote currencies.  Both are treated as equivalent for
+        backtesting purposes.
+        """
+        if not self._markets:
+            # Still need *some* markets to exist.
+            from freqtrade.exceptions import OperationalException
+
+            raise OperationalException(
+                "Could not load markets, therefore cannot start. "
+                "Please investigate the above error for more details."
+            )
+        # Accept USD or USDT — no further validation needed.
+
+    def get_pair_quote_currency(self, pair: str) -> str:
+        """Normalise USD and USDT to the configured stake currency.
+
+        This lets freqtrade's pairlist filtering treat ``AAPL/USD`` and
+        ``BTC/USDT`` as compatible with a single ``stake_currency`` setting.
+        """
+        raw = self.markets.get(pair, {}).get("quote", "")
+        if raw in ("USD", "USDT"):
+            return self._config.get("stake_currency", raw)
+        return raw
 
     # ------------------------------------------------------------------
     # Fees — graceful fallback for non-crypto assets

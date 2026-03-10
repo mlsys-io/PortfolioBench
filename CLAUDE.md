@@ -20,7 +20,7 @@ PortfolioBench is a multi-asset portfolio benchmarking framework wrapping freqtr
 freqtrade backtesting --strategy EmaCrossStrategy --strategy-path ./strategy --timeframe 4h --timerange 20250101-20250601 --pairs BTC/USDT ETH/USDT
 
 # Backtest a portfolio strategy
-freqtrade backtesting --strategy ONS_Portfolio --strategy-path ./user_data/strategies --timeframe 5m --timerange 20260101-20260108 --pairs BTC/USDT ETH/USDT AAPL/USDT --dry-run-wallet 1000000
+freqtrade backtesting --strategy ONS_Portfolio --strategy-path ./user_data/strategies --timeframe 5m --timerange 20260101-20260108 --pairs BTC/USDT ETH/USDT AAPL/USD --dry-run-wallet 1000000
 
 # Run standalone portfolio pipeline
 python -m portfolio.PortfolioManagement
@@ -39,12 +39,18 @@ bash utils/backtest_tests.bash
 3. For portfolio algorithms: implement `IStrategy` with `position_adjustment_enable=True` in `user_data/strategies/`
 
 ## Adding New Assets
-Place feather files as `{TICKER}_USDT-{timeframe}.feather` in `user_data/data/binance/`. The `Portfoliobench` exchange subclass auto-injects synthetic market entries for any pair not found on the real exchange.
+Place feather files in `user_data/data/binance/`:
+- Crypto: `{TICKER}_USDT-{timeframe}.feather` (e.g. `BTC_USDT-1d.feather`)
+- Stocks & indices: `{TICKER}_USD-{timeframe}.feather` (e.g. `AAPL_USD-1d.feather`)
+
+The `Portfoliobench` exchange subclass auto-injects synthetic market entries for any pair not found on the real exchange.
 
 ## Custom Exchange: `Portfoliobench`
 Non-crypto asset support is implemented via a clean exchange subclass at `freqtrade/exchange/portfoliobench.py` (extends `Binance`). It handles:
 - Offline-tolerant market loading (5s timeout, 0 retries, graceful fallback)
 - Synthetic market injection for stocks/indices (any pair in the whitelist or CLI)
+- Proper quote-currency convention: crypto uses USDT, stocks/indices use USD
+- USD/USDT normalisation so both work with a single `stake_currency` setting
 - Zero-fee fallback for assets without exchange fee data
 - Default 1x leverage tier for non-crypto assets
 
