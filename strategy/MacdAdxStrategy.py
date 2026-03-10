@@ -80,15 +80,15 @@ class MacdAdxStrategy(IStrategy):
     # Strategy parameters
     macdFast = IntParameter(8, 15, default=15, space="buy")
     macdSlow = IntParameter(20, 30, default=26, space="buy")
-    macdSignal = IntParameter(10, 15, default=9, space="buy")
+    macdSignal = IntParameter(7, 15, default=9, space="buy")
     adxPeriod = IntParameter(10, 20, default=15, space="buy")
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         macd = ta.MACD(
-            dataframe, 
-            macd_fast=self.macdFast.value, 
-            macd_slow=self.macdSlow.value,
-            signal_period=self.macdSignal.value
+            dataframe,
+            fastperiod=self.macdFast.value,
+            slowperiod=self.macdSlow.value,
+            signalperiod=self.macdSignal.value
         )
         dataframe["macd"] = macd["macd"]
         dataframe["macdsignal"] = macd["macdsignal"]

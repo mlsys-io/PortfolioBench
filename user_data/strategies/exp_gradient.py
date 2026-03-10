@@ -147,11 +147,11 @@ class ExponentialGradientPortfolio(IStrategy):
         else:
             return self.config['dry_run_wallet']
 
-    def custom_stake_amount(self, current_time: datetime, current_rate: float,
+    def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
                             proposed_stake: float, min_stake: Optional[float],
                             max_stake: float, leverage: float, entry_tag: Optional[str],
                             side: str, **kwargs) -> float:
-        dataframe, _ = self.dp.get_analyzed_dataframe(kwargs['pair'], self.timeframe)
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         if dataframe.empty:
             return proposed_stake
 
@@ -159,7 +159,7 @@ class ExponentialGradientPortfolio(IStrategy):
         if not np.isfinite(target_weight) or target_weight <= 0:
             return proposed_stake
 
-        total_wallet = self._get_total_wallet(kwargs['pair'], current_time, current_rate)
+        total_wallet = self._get_total_wallet(pair, current_time, current_rate)
         return total_wallet * target_weight
 
     def adjust_trade_position(self, trade: Trade, current_time: datetime,

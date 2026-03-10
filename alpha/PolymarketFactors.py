@@ -28,7 +28,7 @@ class PolymarketAlpha(IAlpha):
     - prob_ema_slow: Slow EMA of probability
     """
 
-    def __init__(self, dataframe: DataFrame, metadata: dict = {}):
+    def __init__(self, dataframe: DataFrame, metadata: dict = None):
         self.fast_period = 12
         self.slow_period = 26
         self.rsi_period = 14
