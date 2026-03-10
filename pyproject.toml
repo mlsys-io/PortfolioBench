@@ -140,6 +140,8 @@ Documentation = "https://freqtrade.io"
 [project.scripts]
 freqtrade = "freqtrade.main:main"
 download = "dataset.main:main"
+strategy_test = "utils.test:main"
+
 
 [tool.setuptools]
 include-package-data = true
@@ -147,7 +149,7 @@ zip-safe = false
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["freqtrade*", "dataset*", "portfolio*", "strategy*", "alpha*"]
+include = ["freqtrade*", "dataset*", "portfolio*", "strategy*", "alpha*", "utils*"]
 exclude = ["tests", "tests.*", "user_data", "user_data*"]
 namespaces = true
 
