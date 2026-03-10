@@ -5,11 +5,12 @@ A **multi-asset portfolio benchmarking framework** built as a wrapper around [fr
 ## Key Capabilities
 
 - **Multi-asset backtesting** — Crypto, US stocks (~100 tickers), and global indices (DJI, S&P 500, FTSE, Nikkei, etc.)
-- **Portfolio algorithms** — ONS (Online Newton Step), Minimum Variance, Inverse Volatility, Best Single Asset (Momentum Rotation)
-- **Trading strategies** — EMA Crossover, MACD+ADX
-- **Alpha factor abstraction** — Decoupled indicator computation via `IAlpha` interface
+- **8 portfolio algorithms** — ONS, Minimum Variance, Inverse Volatility, Best Single Asset, Exponential Gradient, Maximum Sharpe, Risk Parity, Polymarket Portfolio
+- **8 trading strategies** — EMA Crossover, MACD+ADX, Ichimoku Cloud, RSI+Bollinger, Stochastic+CCI, MLP Speculative, Polymarket Mean Reversion, Polymarket Momentum
+- **Alpha factor abstraction** — Decoupled indicator computation via `IAlpha` interface (EmaAlpha, PolymarketAlpha)
 - **Blended portfolio construction** — Standalone pipeline combining ONS + EMA + Equal-Weight
-- **119 instruments** across 3 timeframes (5m, 4h, 1d) with pre-downloaded OHLCV data
+- **Automated benchmarking** — Scripts to run strategies across asset classes and timeframes
+- **119 instruments** across 3 timeframes (5m, 4h, 1d) with pre-downloaded OHLCV data (357 feather files)
 
 ## Repository Layout
 
@@ -17,27 +18,36 @@ A **multi-asset portfolio benchmarking framework** built as a wrapper around [fr
 PortfolioBench/
 ├── freqtrade/                  # Vendored freqtrade (unmodified)
 │   └── exchange/
-│       └── portfoliobench.py   # Custom exchange subclass (extends Binance)
+│       ├── portfoliobench.py   # Custom exchange subclass (extends Binance)
+│       └── polymarket.py       # Polymarket exchange subclass
 ├── alpha/                      # Pluggable alpha-factor system
 │   ├── interface.py            # IAlpha abstract base class
 │   ├── SimpleEmaFactors.py     # EMA fast/slow/exit + rolling mean volume
 │   └── PolymarketFactors.py    # Polymarket prediction-market factors
-├── strategy/                   # Freqtrade IStrategy implementations
+├── strategy/                   # Freqtrade IStrategy implementations (8 strategies)
 │   ├── EmaCrossStrategy.py     # EMA crossover entry/exit strategy
 │   ├── MacdAdxStrategy.py      # MACD + ADX trend-confirmation strategy
 │   ├── IchimokuCloudStrategy.py        # Ichimoku Cloud strategy
 │   ├── RsiBollingerStrategy.py         # RSI + Bollinger Bands strategy
 │   ├── StochasticCciStrategy.py        # Stochastic + CCI strategy
 │   ├── MlpSpeculativeStrategy.py       # MLP-based speculative strategy
+│   ├── mlp_speculative_model/          # MLP model utilities
 │   ├── PolymarketMeanReversionStrategy.py  # Polymarket mean reversion
 │   └── PolymarketMomentumStrategy.py       # Polymarket momentum
 ├── portfolio/                  # Standalone portfolio pipeline
 │   └── PortfolioManagement.py  # 7-step: load → alpha → signals → ONS → blend → backtest → metrics
 ├── dataset/                    # Data management (stub)
 │   └── main.py
+├── tests/                      # Unit and integration tests
+│   ├── test_alpha.py           # Alpha factor tests
+│   ├── test_data_integrity.py  # Data integrity tests
+│   └── test_portfolio_management.py  # Portfolio pipeline tests
+├── benchmark.py                # Single strategy benchmarking script
+├── benchmark_all.py            # Full benchmarking matrix runner
 ├── user_data/
-│   ├── config.json             # Backtesting configuration
-│   ├── strategies/             # Portfolio-optimization strategies
+│   ├── config.json             # Backtesting configuration (portfoliobench exchange)
+│   ├── config_polymarket.json  # Polymarket backtesting configuration
+│   ├── strategies/             # Portfolio-optimization strategies (8 algorithms)
 │   │   ├── ONS.py              # Online Newton Step rebalancing
 │   │   ├── inv_vol.py          # Inverse Volatility allocation
 │   │   ├── min_var.py          # Minimum Variance allocation
@@ -78,7 +88,7 @@ freqtrade backtesting \
     --strategy-path ./user_data/strategies \
     --timeframe 5m \
     --timerange 20260101-20260108 \
-    --pairs BTC/USDT ETH/USDT AAPL/USDT MSFT/USDT DJI/USDT \
+    --pairs BTC/USDT ETH/USDT AAPL/USD MSFT/USD DJI/USD \
     --dry-run-wallet 1000000
 ```
 
@@ -133,7 +143,9 @@ Runs 4 asset categories (crypto, stocks, indices, mixed) across 3 timeframes = 1
 - **US Stocks (~100)**: AAPL, MSFT, NVDA, GOOG, AMZN, META, TSLA, JPM, and more (roughly S&P 100)
 - **Global Indices (9)**: DJI, GSPC (S&P 500), IXIC (Nasdaq), RUT (Russell 2000), FTSE, N225 (Nikkei), HSI (Hang Seng), STOXX50E, VIX
 
-All data is stored as feather files in `user_data/data/binance/` using the naming convention `{TICKER}_USDT-{timeframe}.feather`.
+All data is stored as feather files in `user_data/data/binance/`:
+- Crypto: `{TICKER}_USDT-{timeframe}.feather` (e.g. `BTC_USDT-1d.feather`)
+- Stocks & indices: `{TICKER}_USD-{timeframe}.feather` (e.g. `AAPL_USD-1d.feather`)
 
 ## Benchmarking
 
@@ -141,11 +153,11 @@ PortfolioBench supports systematic benchmarking across multiple dimensions:
 
 | Dimension | Values |
 |-----------|--------|
-| Strategies | EmaCross, MacdAdx, Ichimoku, RsiBollinger, StochasticCci, MlpSpeculative, ONS, InverseVol, MinVar, BestSingleAsset, ExpGradient, MaxSharpe, RiskParity |
+| Strategies | EmaCross, MacdAdx, Ichimoku, RsiBollinger, StochasticCci, MlpSpeculative, PolymarketMeanReversion, PolymarketMomentum, ONS, InverseVol, MinVar, BestSingleAsset, ExpGradient, MaxSharpe, RiskParity, PolymarketPortfolio |
 | Asset classes | Crypto, US Stocks, Global Indices, Mixed |
 | Timeframes | 5m, 4h, 1d |
 
-This produces up to **156 benchmark configurations** (13 strategies x 4 asset classes x 3 timeframes).
+This produces up to **192 benchmark configurations** (16 strategies x 4 asset classes x 3 timeframes).
 
 **Metrics**: Total return, annualized return, Sharpe ratio, max drawdown, number of trades, win rate, profit factor.
 
@@ -174,7 +186,7 @@ Implement `IStrategy` with `position_adjustment_enable = True` in `user_data/str
 ### Adding New Assets
 
 1. Prepare OHLCV data as feather files with columns: `date, open, high, low, close, volume`
-2. Name files as `{TICKER}_USDT-{timeframe}.feather`
+2. Name files as `{TICKER}_USDT-{timeframe}.feather` (crypto) or `{TICKER}_USD-{timeframe}.feather` (stocks/indices)
 3. Place in `user_data/data/binance/`
 4. Add pairs to the config whitelist or pass via `--pairs`
 

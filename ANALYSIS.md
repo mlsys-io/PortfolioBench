@@ -6,10 +6,11 @@ PortfolioBench is a **multi-asset portfolio benchmarking framework** built as a 
 
 ### Key Capabilities
 - **Multi-asset backtesting**: Crypto, US stocks (~100 tickers), and global indices (DJI, S&P 500, FTSE, Nikkei, etc.)
-- **Portfolio algorithms**: ONS (Online Newton Step), Minimum Variance, Inverse Volatility, Best Single Asset (Momentum Rotation)
-- **Trading strategies**: EMA Crossover, MACD+ADX
-- **Alpha factor abstraction**: Decoupled indicator computation via `IAlpha` interface
+- **8 portfolio algorithms**: ONS, Minimum Variance, Inverse Volatility, Best Single Asset, Exponential Gradient, Maximum Sharpe, Risk Parity, Polymarket Portfolio
+- **8 trading strategies**: EMA Crossover, MACD+ADX, Ichimoku Cloud, RSI+Bollinger, Stochastic+CCI, MLP Speculative, Polymarket Mean Reversion, Polymarket Momentum
+- **Alpha factor abstraction**: Decoupled indicator computation via `IAlpha` interface (EmaAlpha, PolymarketAlpha)
 - **Blended portfolio construction**: Standalone pipeline combining ONS + EMA + Equal-Weight
+- **Automated benchmarking**: Scripts to run strategies across asset classes and timeframes
 
 ---
 
@@ -19,12 +20,13 @@ PortfolioBench is a **multi-asset portfolio benchmarking framework** built as a 
 PortfolioBench/
 ├── freqtrade/                  # Vendored from upstream freqtrade (unmodified)
 │   └── exchange/
-│       └── portfoliobench.py   # Custom exchange subclass (extends Binance)
+│       ├── portfoliobench.py   # Custom exchange subclass (extends Binance)
+│       └── polymarket.py       # Polymarket exchange subclass
 │
 ├── alpha/                      # NEW: Pluggable alpha-factor system
 │   ├── interface.py            # IAlpha abstract base class
 │   ├── SimpleEmaFactors.py     # EmaAlpha: EMA fast/slow/exit + rolling mean volume
-│   └── PolymarketFactors.py    # Polymarket prediction-market factors
+│   └── PolymarketFactors.py    # PolymarketAlpha: prediction-market factors
 │
 ├── strategy/                   # NEW: Freqtrade IStrategy implementations (8 strategies)
 │   ├── EmaCrossStrategy.py     # EMA crossover entry/exit strategy
@@ -33,6 +35,7 @@ PortfolioBench/
 │   ├── RsiBollingerStrategy.py         # RSI + Bollinger Bands strategy
 │   ├── StochasticCciStrategy.py        # Stochastic + CCI strategy
 │   ├── MlpSpeculativeStrategy.py       # MLP-based speculative strategy
+│   ├── mlp_speculative_model/          # MLP model utilities
 │   ├── PolymarketMeanReversionStrategy.py  # Polymarket mean reversion
 │   └── PolymarketMomentumStrategy.py       # Polymarket momentum
 │
@@ -42,8 +45,17 @@ PortfolioBench/
 ├── dataset/                    # NEW: Placeholder for data management
 │   └── main.py
 │
+├── tests/                      # Unit and integration tests
+│   ├── test_alpha.py           # Alpha factor tests
+│   ├── test_data_integrity.py  # Data integrity tests
+│   └── test_portfolio_management.py  # Portfolio pipeline tests
+│
+├── benchmark.py                # Single strategy benchmarking script
+├── benchmark_all.py            # Full benchmarking matrix runner
+│
 ├── user_data/
-│   ├── config.json             # Backtesting configuration (fee=0, spot mode)
+│   ├── config.json             # Backtesting configuration (portfoliobench exchange)
+│   ├── config_polymarket.json  # Polymarket backtesting configuration
 │   ├── strategies/             # NEW: Portfolio-optimization strategies (8 algorithms)
 │   │   ├── ONS.py              # Online Newton Step rebalancing
 │   │   ├── inv_vol.py          # Inverse Volatility allocation
@@ -54,9 +66,9 @@ PortfolioBench/
 │   │   ├── risk_parity.py      # Risk Parity allocation
 │   │   └── polymarket_portfolio.py # Polymarket portfolio strategy
 │   └── data/binance/           # Pre-downloaded OHLCV data (357 feather files)
-│       ├── BTC_USDT-{5m,4h,1d}.feather    # Crypto (10 assets)
-│       ├── AAPL_USDT-{5m,4h,1d}.feather   # US Stocks (~100 assets)
-│       └── DJI_USDT-{5m,4h,1d}.feather    # Indices (9 indices)
+│       ├── BTC_USDT-{5m,4h,1d}.feather    # Crypto (10 assets, _USDT suffix)
+│       ├── AAPL_USD-{5m,4h,1d}.feather    # US Stocks (~100 assets, _USD suffix)
+│       └── DJI_USD-{5m,4h,1d}.feather     # Indices (9 indices, _USD suffix)
 │
 └── utils/
     ├── backtest_script.bash    # Simple CLI backtest launcher
@@ -257,6 +269,12 @@ Multiple strategies include `confirm_trade_entry()` with 1% price deviation guar
 | Polymarket | Prediction-market weighted | Monthly | All pairs | Market-implied | Prediction odds |
 | EMA Cross | Signal-based | On signal | Per-pair | None | Trend |
 | MACD+ADX | Signal-based | On signal | Per-pair | None | Trend + ADX |
+| Ichimoku Cloud | Signal-based | On signal | Per-pair | None | Cloud trend |
+| RSI+Bollinger | Signal-based | On signal | Per-pair | None | Mean-reversion |
+| Stochastic+CCI | Signal-based | On signal | Per-pair | None | Oscillator |
+| MLP Speculative | Signal-based | On signal | Per-pair | ML model | Neural network |
+| Polymarket MeanRev | Signal-based | On signal | Per-pair | None | Prediction-market |
+| Polymarket Momentum | Signal-based | On signal | Per-pair | None | Prediction-market |
 
 ---
 
@@ -298,10 +316,10 @@ AAPL, MSFT, NVDA, GOOG, AMZN, META, TSLA, JPM, MA, V, UNH, HD, PG, JNJ, LLY, AVG
 DJI (Dow Jones), GSPC (S&P 500), IXIC (Nasdaq), RUT (Russell 2000), FTSE (UK), N225 (Nikkei), HSI (Hang Seng), STOXX50E (Euro Stoxx 50), VIX
 
 ### 8.2 Data Format
-All data stored as feather files in freqtrade's native naming convention:
-```
-{TICKER}_USDT-{timeframe}.feather
-```
+All data stored as feather files in `user_data/data/binance/`:
+- Crypto: `{TICKER}_USDT-{timeframe}.feather` (e.g. `BTC_USDT-1d.feather`)
+- Stocks & indices: `{TICKER}_USD-{timeframe}.feather` (e.g. `AAPL_USD-1d.feather`)
+
 Timeframes: `5m`, `4h`, `1d`
 
 ### 8.3 How Stock/Index Data Works in freqtrade
@@ -342,7 +360,7 @@ freqtrade backtesting \
     --strategy-path ./strategy \
     --timeframe 1d \
     --timerange 20240101-20260131 \
-    --pairs AAPL/USDT MSFT/USDT NVDA/USDT GOOG/USDT
+    --pairs AAPL/USD MSFT/USD NVDA/USD GOOG/USD
 
 # Portfolio strategy (ONS) across mixed assets
 freqtrade backtesting \
@@ -350,7 +368,7 @@ freqtrade backtesting \
     --strategy-path ./user_data/strategies \
     --timeframe 5m \
     --timerange 20260101-20260108 \
-    --pairs BTC/USDT ETH/USDT AAPL/USDT MSFT/USDT DJI/USDT \
+    --pairs BTC/USDT ETH/USDT AAPL/USD MSFT/USD DJI/USD \
     --dry-run-wallet 1000000
 ```
 
@@ -397,7 +415,7 @@ freqtrade hyperopt \
     --hyperopt-loss SharpeHyperOptLoss \
     --timeframe 5m \
     --timerange 20260101-20260108 \
-    --pairs AAPL/USDT MSFT/USDT NVDA/USDT \
+    --pairs AAPL/USD MSFT/USD NVDA/USD \
     --epochs 100
 ```
 
@@ -409,7 +427,7 @@ freqtrade hyperopt \
 
 | Dimension | Values |
 |-----------|--------|
-| **Strategies** | EmaCross, MacdAdx, Ichimoku, RsiBollinger, StochasticCci, MlpSpeculative, ONS, ExpGradient, InverseVol, MinVar, MaxSharpe, RiskParity, BestSingleAsset |
+| **Strategies** | EmaCross, MacdAdx, Ichimoku, RsiBollinger, StochasticCci, MlpSpeculative, PolymarketMeanReversion, PolymarketMomentum, ONS, ExpGradient, InverseVol, MinVar, MaxSharpe, RiskParity, BestSingleAsset, PolymarketPortfolio |
 | **Asset classes** | Crypto, US Stocks, Global Indices, Mixed |
 | **Timeframes** | 5m, 4h, 1d |
 | **Universes** | Crypto-only (10), Stock-only (~100), Index-only (9), All (119) |
@@ -430,13 +448,15 @@ To fully benchmark, run each strategy against each asset category and timeframe:
 
 ```
 For strategy in [EmaCross, MacdAdx, Ichimoku, RsiBollinger, StochasticCci, MlpSpeculative,
-                  ONS, ExpGradient, InverseVol, MinVar, MaxSharpe, RiskParity, BestSingleAsset]:
+                  PolymarketMeanReversion, PolymarketMomentum,
+                  ONS, ExpGradient, InverseVol, MinVar, MaxSharpe, RiskParity, BestSingleAsset,
+                  PolymarketPortfolio]:
   For category in [crypto_only, stock_only, index_only, mix_assets]:
     For timeframe in [5m, 4h, 1d]:
       Run backtest → collect metrics
 ```
 
-This produces 13 × 4 × 3 = **156 benchmark configurations**.
+This produces 16 × 4 × 3 = **192 benchmark configurations**.
 
 ### 10.4 Adding New Strategies
 
@@ -501,7 +521,7 @@ class MyPortfolio(IStrategy):
 ### 10.5 Adding New Asset Classes
 
 1. Prepare OHLCV data as feather files with columns: `date, open, high, low, close, volume`
-2. Name files as `{TICKER}_USDT-{timeframe}.feather`
+2. Name files as `{TICKER}_USDT-{timeframe}.feather` (crypto) or `{TICKER}_USD-{timeframe}.feather` (stocks/indices)
 3. Place in `user_data/data/binance/`
 4. Add pairs to config whitelist or pass via `--pairs` CLI flag
 5. The `Portfoliobench` exchange subclass will auto-inject synthetic market entries
@@ -536,4 +556,4 @@ class MyPortfolio(IStrategy):
 3. **Risk management**: Add drawdown limits, position size limits, sector exposure limits
 4. **Walk-forward optimization**: Time-series cross-validation for parameter tuning
 5. **Multi-timeframe strategies**: Combine signals across 5m/4h/1d
-6. **Automated benchmarking**: Script that runs all 72 configurations and produces comparison tables
+6. **Automated benchmarking**: Script that runs all 192 configurations and produces comparison tables
