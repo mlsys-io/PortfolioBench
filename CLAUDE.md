@@ -4,13 +4,16 @@
 PortfolioBench is a multi-asset portfolio benchmarking framework wrapping freqtrade. It extends freqtrade to support US stocks, global indices, and portfolio optimization algorithms beyond cryptocurrency trading.
 
 ## Repository Layout
-- `freqtrade/` — Vendored freqtrade (unmodified; custom behaviour lives in `exchange/portfoliobench.py`)
-- `alpha/` — Pluggable alpha-factor interface (`IAlpha`) and implementations (EmaAlpha, PolymarketFactors)
+- `freqtrade/` — Vendored freqtrade (unmodified; custom behaviour lives in `exchange/portfoliobench.py` and `exchange/polymarket.py`)
+- `alpha/` — Pluggable alpha-factor interface (`IAlpha`) and implementations (EmaAlpha, PolymarketAlpha)
 - `strategy/` — Freqtrade `IStrategy` implementations (EmaCross, MacdAdx, Ichimoku, RsiBollinger, StochasticCci, MlpSpeculative, Polymarket strategies)
 - `portfolio/` — Standalone portfolio construction pipeline
 - `dataset/` — Data management (stub)
+- `tests/` — Unit and integration tests (alpha, data integrity, portfolio management)
+- `benchmark.py` / `benchmark_all.py` — Benchmarking scripts
 - `user_data/strategies/` — Portfolio-optimization strategies (ONS, MinVar, InvVol, BestSingleAsset, ExpGradient, MaxSharpe, RiskParity, Polymarket)
-- `user_data/data/binance/` — Pre-downloaded OHLCV feather files (119 instruments × 3 timeframes)
+- `user_data/config.json` — Main backtesting config; `user_data/config_polymarket.json` — Polymarket config
+- `user_data/data/binance/` — Pre-downloaded OHLCV feather files (119 instruments × 3 timeframes = 357 files)
 - `utils/` — Bash scripts for backtesting, data generation, and testing
 
 ## Key Commands
