@@ -37,8 +37,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          lfs: true
 
       - uses: actions/setup-python@v5
         with:
@@ -51,6 +49,9 @@ jobs:
           pip install scipy pytest
           pip install -e .
 
+      - name: Generate synthetic test data
+        run: python utils/generate_test_data.py
+
       - name: Run unit tests
         run: pytest tests/ -v --tb=short
 
@@ -62,8 +63,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          lfs: true
 
       - uses: actions/setup-python@v5
         with:
@@ -169,8 +168,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          lfs: true
 
       - uses: actions/setup-python@v5
         with:
@@ -194,6 +191,9 @@ jobs:
           pip install -r requirements.txt
           pip install scipy
           pip install -e .
+
+      - name: Generate synthetic test data
+        run: python utils/generate_test_data.py
 
       - name: Run standalone portfolio pipeline
         run: python -m portfolio.PortfolioManagement
@@ -206,8 +206,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          lfs: true
 
       - uses: actions/setup-python@v5
         with:
@@ -231,6 +229,9 @@ jobs:
           pip install -r requirements.txt
           pip install scipy
           pip install -e .
+
+      - name: Generate synthetic test data
+        run: python utils/generate_test_data.py
 
       - name: Backtest EmaCrossStrategy (crypto, 1d)
         run: |
@@ -248,7 +249,7 @@ jobs:
             --strategy-path ./strategy \
             --timeframe 1d \
             --timerange 20250501-20250601 \
-            --pairs AAPL/USDT MSFT/USDT
+            --pairs AAPL/USD MSFT/USD
 
       - name: Backtest ONS_Portfolio (mixed, 5m, short range)
         run: |
@@ -257,5 +258,5 @@ jobs:
             --strategy-path ./user_data/strategies \
             --timeframe 5m \
             --timerange 20260101-20260103 \
-            --pairs BTC/USDT ETH/USDT AAPL/USDT \
+            --pairs BTC/USDT ETH/USDT AAPL/USD \
             --dry-run-wallet 1000000
