@@ -65,6 +65,7 @@ SUPPORTED_EXCHANGES = [
     "kraken",
     "okx",
     "myokx",
+    "polymarket",
     "portfoliobench",
 ]
 
