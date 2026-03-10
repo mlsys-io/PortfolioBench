@@ -668,7 +668,14 @@ class Exchange:
 
     async def _api_reload_markets(self, reload: bool = False) -> None:
         try:
-            await self._api_async.load_markets(reload=reload, params={})
+            # HACK: Use a short timeout (5s) so offline backtesting doesn't hang
+            import asyncio as _asyncio
+            await _asyncio.wait_for(
+                self._api_async.load_markets(reload=reload, params={}),
+                timeout=5.0
+            )
+        except (TimeoutError, _asyncio.TimeoutError) as e:
+            raise TemporaryError(f"Market loading timed out: {e}") from e
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
@@ -704,21 +711,29 @@ class Exchange:
         ):
             return None
         logger.debug("Performing scheduled market reload..")
+        exchange_loaded = False
         try:
             # on initial load, we retry 3 times to ensure we get the markets
-            retries: int = 3 if force else 0
+            # HACK: Use 0 retries so backtesting works offline without long delays
+            retries: int = 0
             # Reload async markets, then assign them to sync api
             retrier(self._load_async_markets, retries=retries)(reload=True)
             self._markets = self._api_async.markets
+            exchange_loaded = True
+        except (ccxt.BaseError, TemporaryError):
+            logger.warning("Could not load markets from exchange, will use locally injected pairs.")
 
+        try:
             # HACK: Allow stocks to get custom data
+            # This also serves as a fallback when the exchange is unreachable:
+            # inject ALL configured pairs so backtesting works with local data.
             whitelist = self._config.get('exchange', {}).get('pair_whitelist', [])
             cli_pairs = self._config.get('pairs', [])
-            
+
             all_pairs = set(whitelist + cli_pairs)
             for pair in all_pairs:
                 if pair not in self._markets:
-                    logger.info(f"Auto-injecting stock pair: {pair}")
+                    logger.info(f"Auto-injecting pair: {pair}")
                     self._markets[pair] = {
                         'symbol': pair,
                         'base': pair.split('/')[0],
@@ -741,21 +756,26 @@ class Exchange:
                         'info': {}
                     }
 
-            self._api.set_markets_from_exchange(self._api_async)
-            
-            # Assign options array, as it contains some temporary information from the exchange.
-            # ccxt does not implicitly copy options over in set_markets_from_exchange
-            self._api.options = self._api_async.options
-            if self._exchange_ws:
-                # Set markets to avoid reloading on websocket api
-                self._ws_async.set_markets_from_exchange(self._api_async)
-                self._ws_async.options = self._api.options
+            if exchange_loaded:
+                self._api.set_markets_from_exchange(self._api_async)
+
+                # Assign options array, as it contains some temporary information from the exchange.
+                # ccxt does not implicitly copy options over in set_markets_from_exchange
+                self._api.options = self._api_async.options
+                if self._exchange_ws:
+                    # Set markets to avoid reloading on websocket api
+                    self._ws_async.set_markets_from_exchange(self._api_async)
+                    self._ws_async.options = self._api.options
+
+            # Also sync injected markets to the sync api
+            self._api.markets = self._markets
+
             self._last_markets_refresh = dt_ts()
 
-            if is_initial and self._ft_has["needs_trading_fees"]:
+            if exchange_loaded and is_initial and self._ft_has["needs_trading_fees"]:
                 self._trading_fees = self.fetch_trading_fees()
 
-            if load_leverage_tiers and self.trading_mode == TradingMode.FUTURES:
+            if exchange_loaded and load_leverage_tiers and self.trading_mode == TradingMode.FUTURES:
                 self.fill_leverage_tiers()
         except (ccxt.BaseError, TemporaryError):
             logger.exception("Could not load markets.")
