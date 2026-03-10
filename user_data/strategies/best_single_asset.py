@@ -1,5 +1,4 @@
 from freqtrade.strategy import IStrategy
-from freqtrade.strategy.interface import ListPairsWithTimeframes
 from pandas import DataFrame
 import pandas as pd
 import numpy as np

@@ -27,7 +27,8 @@ class MinimumVariancePortfolio(IStrategy):
     process_only_new_candles = True
     startup_candle_count = 30
     position_adjustment_enable = True
-    
+    max_entry_position_adjustment = -1
+
     minimal_roi = {}
 
     def _compute_mvp_weights(self, price_data: pd.DataFrame) -> pd.DataFrame:
@@ -44,7 +45,7 @@ class MinimumVariancePortfolio(IStrategy):
                 continue
 
             window = price_data.iloc[i - self.LOOKBACK:i]
-            returns = window.pct_change(fill_method=None).dropna()
+            returns = window.pct_change().dropna()
 
             if returns.empty or len(returns) < 2:
                 weights_history[i] = fallback
@@ -69,7 +70,11 @@ class MinimumVariancePortfolio(IStrategy):
         Returns a boolean Series that is True on the first available
         trading day of each month in the dataframe.
         """
-        dates = pd.to_datetime(dataframe['date']).dt.tz_localize(None)
+        dates = pd.to_datetime(dataframe['date'])
+        if dates.dt.tz is not None:
+            dates = dates.dt.tz_convert(None)
+        else:
+            dates = dates.dt.tz_localize(None)
         month_year = dates.dt.to_period('M')
         # Mark the first occurrence of each month
         first_trading_day = ~month_year.duplicated(keep='first')
@@ -127,9 +132,23 @@ class MinimumVariancePortfolio(IStrategy):
         dataframe.loc[:, 'exit_long'] = (
             (dataframe['target_weight'] == 0) &
             (dataframe['rebalance'] == True)
-        )
+        ).astype(int)
         return dataframe
 
+    def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
+                            proposed_stake: float, min_stake: Optional[float], max_stake: float,
+                            leverage: float, entry_tag: Optional[str], side: str,
+                            **kwargs) -> float:
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+        if dataframe.empty:
+            return proposed_stake
+
+        target_weight = dataframe.iloc[-1].get('target_weight', 0.0)
+        if not np.isfinite(target_weight) or target_weight <= 0:
+            return proposed_stake
+
+        total_wallet = self._get_total_wallet(pair, current_time, current_rate)
+        return total_wallet * target_weight
 
     def _get_total_wallet(self, pair: str, current_time: datetime, current_rate: float) -> float:
         if self.wallets:

@@ -206,12 +206,12 @@ def calculate_ons_weights(
 
 
 def _project_simplex_A_norm(q: np.ndarray, A: np.ndarray, n: int) -> np.ndarray:
-    """Solve for the A-norm projection onto the simplex (sum ≈ 0.95)."""
+    """Solve for the A-norm projection onto the simplex (sum = 1.0)."""
     def objective(p):
         diff = q - p
         return diff.T @ A @ diff
 
-    constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 0.95}
+    constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1.0}
     bounds = tuple((0.0, 1.0) for _ in range(n))
     x0 = np.ones(n) / n
     res = minimize(objective, x0, method="SLSQP", bounds=bounds, constraints=constraints, tol=1e-6)

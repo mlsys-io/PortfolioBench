@@ -47,7 +47,7 @@ class MaxSharpePortfolio(IStrategy):
                 continue
 
             window = price_data.iloc[i - self.LOOKBACK:i]
-            returns = window.pct_change(fill_method=None).dropna()
+            returns = window.pct_change().dropna()
 
             if returns.empty or len(returns) < 2:
                 weights_history[i] = fallback
@@ -90,7 +90,11 @@ class MaxSharpePortfolio(IStrategy):
         return pd.DataFrame(weights_history, index=price_data.index, columns=pairs)
 
     def _get_first_trading_day(self, dataframe: DataFrame) -> pd.Series:
-        dates = pd.to_datetime(dataframe['date']).dt.tz_localize(None)
+        dates = pd.to_datetime(dataframe['date'])
+        if dates.dt.tz is not None:
+            dates = dates.dt.tz_convert(None)
+        else:
+            dates = dates.dt.tz_localize(None)
         month_year = dates.dt.to_period('M')
         first_trading_day = ~month_year.duplicated(keep='first')
         return first_trading_day
@@ -147,7 +151,7 @@ class MaxSharpePortfolio(IStrategy):
         dataframe.loc[:, 'exit_long'] = (
             (dataframe['target_weight'] == 0)
             & (dataframe['rebalance'] == True)
-        )
+        ).astype(int)
         return dataframe
 
     def _get_total_wallet(self, pair: str, current_time: datetime, current_rate: float) -> float:
@@ -167,11 +171,11 @@ class MaxSharpePortfolio(IStrategy):
         else:
             return self.config['dry_run_wallet']
 
-    def custom_stake_amount(self, current_time: datetime, current_rate: float,
+    def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
                             proposed_stake: float, min_stake: Optional[float],
                             max_stake: float, leverage: float, entry_tag: Optional[str],
                             side: str, **kwargs) -> float:
-        dataframe, _ = self.dp.get_analyzed_dataframe(kwargs['pair'], self.timeframe)
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         if dataframe.empty:
             return proposed_stake
 
@@ -179,7 +183,7 @@ class MaxSharpePortfolio(IStrategy):
         if not np.isfinite(target_weight) or target_weight <= 0:
             return proposed_stake
 
-        total_wallet = self._get_total_wallet(kwargs['pair'], current_time, current_rate)
+        total_wallet = self._get_total_wallet(pair, current_time, current_rate)
         return total_wallet * target_weight
 
     def adjust_trade_position(self, trade: Trade, current_time: datetime,

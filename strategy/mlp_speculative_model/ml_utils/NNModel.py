@@ -3,8 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from sklearn.dummy import DummyClassifier
-from sklearn.preprocessing import LabelEncoder, TensorDataset
-from torch.utils.data import DataLoader
+from sklearn.preprocessing import LabelEncoder
+from torch.utils.data import DataLoader, TensorDataset
 
 device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
 print(f"Using {device} device")
@@ -29,7 +29,7 @@ class MLPClassifier(nn.Module):
     def forward(self, x):
         return self.model(x)
 
-    def train(self, train_data, y, batch_size=64):
+    def fit(self, train_data, y, batch_size=64):
         device = next(self.model.parameters()).device
         encoder = LabelEncoder()
         y_encoded = encoder.fit_transform(y)
@@ -76,7 +76,9 @@ class MLPClassifier(nn.Module):
 
         return True
     
-    def test(self, dataloader, loss_fn=nn.CrossEntropyLoss):
+    def test(self, dataloader, loss_fn=None):
+        if loss_fn is None:
+            loss_fn = nn.CrossEntropyLoss()
         self.model.eval()
         size = len(dataloader.dataset)
         num_batches = len(dataloader)
