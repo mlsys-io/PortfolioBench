@@ -1,19 +1,31 @@
 # PortfolioBench — Developer Guide
 
 ## Project Overview
-PortfolioBench is a multi-asset portfolio benchmarking framework wrapping freqtrade. It extends freqtrade to support US stocks, global indices, and portfolio optimization algorithms beyond cryptocurrency trading.
+PortfolioBench is a multi-asset portfolio benchmarking framework built on top of freqtrade (included as a git submodule). It extends freqtrade to support US stocks, global indices, prediction markets, and portfolio optimization algorithms beyond cryptocurrency trading.
+
+## Setup
+```bash
+git clone --recurse-submodules https://github.com/mlsys-io/PortfolioBench.git
+cd PortfolioBench
+pip install -e .
+```
+
+Or if already cloned:
+```bash
+git submodule update --init --recursive
+pip install -e .
+```
 
 ## Repository Layout
-- `freqtrade/` — Git submodule pointing to [mlsys-io/freqtrade](https://github.com/mlsys-io/freqtrade) (PortfolioBench-specific changes live there: `exchange/portfoliobench.py`, `exchange/polymarket.py`, CLI subcommands)
+- `freqtrade/` — Git submodule → [mlsys-io/freqtrade](https://github.com/mlsys-io/freqtrade) (PortfolioBench-specific changes: `exchange/portfoliobench.py`, `exchange/polymarket.py`, CLI subcommands)
 - `alpha/` — Pluggable alpha-factor interface (`IAlpha`) and implementations (EmaAlpha, RsiAlpha, MacdAlpha, BollingerAlpha, PolymarketAlpha)
 - `strategy/` — Freqtrade `IStrategy` implementations (EmaCross, MacdAdx, Ichimoku, RsiBollinger, StochasticCci, MlpSpeculative, Polymarket strategies)
 - `portfolio/` — Standalone portfolio construction pipeline
-- `dataset/` — Data management (stub)
 - `tests/` — Unit and integration tests (alpha, data integrity, portfolio management)
 - `benchmark.py` / `benchmark_all.py` — Benchmarking scripts (also accessible via `portbench benchmark`)
 - `user_data/strategies/` — Portfolio-optimization strategies (ONS, MinVar, InvVol, BestSingleAsset, ExpGradient, MaxSharpe, RiskParity, Polymarket)
 - `user_data/config.json` — Main backtesting config; `user_data/config_polymarket.json` — Polymarket config
-- `user_data/data/usstock/` — OHLCV feather files downloaded from Google Drive (119 instruments × 3 timeframes = 357 files)
+- `user_data/data/usstock/` — OHLCV feather files (119 instruments x 3 timeframes = 357 files; download from Google Drive)
 - `utils/` — Bash scripts for backtesting, data generation, and testing
 
 ## Key Commands
@@ -31,7 +43,10 @@ portbench portfolio
 # Generate synthetic test data
 portbench generate-data
 
-# Run full test suite
+# Run unit tests
+python -m pytest tests/ -v
+
+# Run full backtest test suite
 bash utils/backtest_tests.bash
 ```
 
@@ -49,12 +64,6 @@ Place feather files in `user_data/data/usstock/`:
 - Crypto: `{TICKER}_USDT-{timeframe}.feather` (e.g. `BTC_USDT-1d.feather`)
 - Stocks & indices: `{TICKER}_USD-{timeframe}.feather` (e.g. `AAPL_USD-1d.feather`)
 
-To download the pre-built dataset from Google Drive, run:
-```bash
-pip install gdown
-portbench download-data --exchange portfoliobench
-```
-
 The `Portfoliobench` exchange subclass auto-injects synthetic market entries for any pair not found on the real exchange.
 
 ## Custom Exchange: `Portfoliobench`
@@ -67,10 +76,3 @@ Non-crypto asset support is implemented via a clean exchange subclass at `freqtr
 - Default 1x leverage tier for non-crypto assets
 
 To use this exchange, set `"exchange": {"name": "portfoliobench"}` in your config.
-
-## Submodule Setup
-After cloning, initialize the freqtrade submodule:
-```bash
-git submodule update --init --recursive
-pip install -e .
-```

@@ -1,11 +1,10 @@
 services:
-  freqtrade:
+  portfoliobench:
     build: .
     restart: unless-stopped
-    container_name: freqtrade
+    container_name: portfoliobench
     volumes:
       - "./user_data:/freqtrade/user_data"
-      - "./freqtrade/exchange/exchange.py:/freqtrade/freqtrade/exchange/exchange.py"
     ports:
       - "8080:8080"
     command: >

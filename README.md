@@ -16,6 +16,48 @@ PortfolioBench ships with 119 instruments, 16 strategies, 5 alpha factors, and a
 
 ---
 
+## Installation
+
+### Prerequisites
+
+- Python 3.11+
+- [TA-Lib](https://ta-lib.github.io/ta-lib-python/install.html) C library (required by the `TA-Lib` Python package)
+
+### Install from source
+
+```bash
+git clone --recurse-submodules https://github.com/mlsys-io/PortfolioBench.git
+cd PortfolioBench
+pip install -e .
+```
+
+If you already cloned without `--recurse-submodules`, initialize the freqtrade submodule:
+
+```bash
+git submodule update --init --recursive
+pip install -e .
+```
+
+### Verify the installation
+
+```bash
+portbench version
+```
+
+### Optional: install with hyperopt support
+
+```bash
+pip install -e ".[hyperopt]"
+```
+
+### Optional: install development dependencies
+
+```bash
+pip install -e ".[dev]"
+```
+
+---
+
 ## Data Setup
 
 OHLCV data is hosted on Google Drive. Use the `portbench` CLI to download it:

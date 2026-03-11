@@ -3,15 +3,14 @@ requires = ["setuptools >= 64.0.0, <75", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "freqtrade_hacked"
+name = "portfoliobench"
 dynamic = ["version"]
 
 authors = [
-  {name = "Freqtrade Team"},
-  {name = "Freqtrade Team", email = "freqtrade@protonmail.com"},
+  {name = "MLSys Team"},
 ]
 
-description = "Freqtrade - Crypto Trading Bot"
+description = "Multi-asset portfolio benchmarking framework for backtesting trading strategies and portfolio algorithms"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "GPLv3"}
@@ -74,8 +73,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Requirements used for submodules
-plot = ["plotly>=4.0"]
 hyperopt = [
   "scipy",
   "scikit-learn",
@@ -83,64 +80,24 @@ hyperopt = [
   "cmaes",
   "filelock",
 ]
-freqai = [
-  "scikit-learn",
-  "joblib",
-  "lightgbm",
-  "xgboost",
-  "tensorboard",
-  "datasieve>=0.1.5",
-]
-freqai_rl = [
-  "torch; sys_platform != 'darwin' or platform_machine != 'x86_64'",
-  "gymnasium",
-  "stable-baselines3; sys_platform != 'darwin' or platform_machine != 'x86_64'",
-  "sb3-contrib; sys_platform != 'darwin' or platform_machine != 'x86_64'",
-  "tqdm",
-]
 develop = [
-  "isort",
-  "mypy",
-  "pre-commit",
   "pytest-asyncio",
   "pytest-cov",
   "pytest-mock",
-  "pytest-random-order",
-  "pytest-timeout",
-  "pytest-xdist",
   "pytest",
   "ruff",
-  "scipy-stubs",
-  "time-machine",
-  "types-cachetools",
-  "types-filelock",
-  "types-python-dateutil",
-  "types-requests",
-  "types-tabulate",
-]
-jupyter = [
-  "jupyter",
-  "nbstripout",
-  "ipykernel",
-  "nbconvert",
-]
-all = [
-  "freqtrade_hacked[plot,hyperopt,freqai,freqai_rl,jupyter]",
 ]
 dev = [
-  "freqtrade_hacked[all,develop]",
+  "portfoliobench[hyperopt,develop]",
 ]
 
 [project.urls]
-Homepage = "https://github.com/freqtrade/freqtrade"
-Documentation = "https://freqtrade.io"
-"Bug Tracker" = "https://github.com/freqtrade/freqtrade/issues"
+Homepage = "https://github.com/mlsys-io/PortfolioBench"
+"Bug Tracker" = "https://github.com/mlsys-io/PortfolioBench/issues"
 
 
 [project.scripts]
 portbench = "freqtrade.main:main"
-freqtrade = "freqtrade.main:main"
-download = "dataset.main:main"
 strategy_test = "utils.test:main"
 
 
@@ -150,108 +107,18 @@ zip-safe = false
 
 [tool.setuptools.packages.find]
 where = [".", "freqtrade"]
-include = ["freqtrade*", "ft_client*", "dataset*", "portfolio*", "strategy*", "alpha*", "utils*"]
+include = ["freqtrade*", "dataset*", "portfolio*", "strategy*", "alpha*", "utils*"]
 exclude = ["tests", "tests.*", "user_data", "user_data*"]
 namespaces = true
 
 [tool.setuptools.dynamic]
 version = {attr = "freqtrade.__version__"}
 
-[tool.black]
-line-length = 100
-exclude = '''
-(
-  /(
-      \.eggs         # exclude a few common directories in the
-    | \.git          # root of the project
-    | \.hg
-    | \.mypy_cache
-    | \.tox
-    | \.venv
-    | _build
-    | buck-out
-    | build
-    | dist
-  )/
-  # Exclude vendor directory
-  | vendor
-)
-'''
-
-[tool.isort]
-line_length = 100
-profile = "black"
-# multi_line_output=3
-lines_after_imports=2
-skip_glob = ["**/.env*", "**/env/*", "**/.venv/*", "**/docs/*", "**/user_data/*"]
-known_first_party = ["freqtrade_client"]
-
 [tool.pytest.ini_options]
-# TODO: should be migrated to [tool.pytest] as support for this was added in 9.0
 log_format = "%(asctime)s %(levelname)s %(message)s"
 log_date_format = "%Y-%m-%d %H:%M:%S"
-
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-addopts = ""
-
-[tool.mypy]
-ignore_missing_imports = true
-namespace_packages = false
-warn_unused_ignores = true
-exclude = [
-    '^build_helpers\.py$',
-    '^ft_client/build/.*$',
-]
-plugins = [
-  "sqlalchemy.ext.mypy.plugin"
-]
-
-[[tool.mypy.overrides]]
-module = "tests.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = [
-  "freqtrade.templates.*",
-  "tests.strategy.strats"
-]
-# Disable attr-defined check due to ta-lib not having type stubs
-disable_error_code = "attr-defined"
-
-[tool.pyright]
-include = ["freqtrade", "ft_client"]
-exclude = [
-  "**/__pycache__",
-  "build_helpers/*.py",
-  "ft_client/build/*",
-  "build/*",
-]
-ignore = ["freqtrade/vendor/**"]
-pythonPlatform = "All"
-pythonVersion = "3.11"
-
-typeCheckingMode = "off"
-# analyzeUnannotatedFunctions = false
-
-reportArgumentType = false  # 155
-reportAssignmentType = false  # 12
-reportAttributeAccessIssue = false  # 255
-reportCallIssue = false  # 23
-reportGeneralTypeIssues = false  # 48
-reportIncompatibleMethodOverride = false  # 15
-reportIncompatibleVariableOverride = false  # 5
-reportIndexIssue = false  # 22
-reportMissingImports = false  # 5
-reportOperatorIssue = false  # 7
-reportOptionalMemberAccess = false  # 35
-reportOptionalOperand = false  # 7
-reportPossiblyUnboundVariable = false  # 36
-reportPrivateImportUsage = false  # 5
-reportRedeclaration = false  # 1
-reportReturnType = false  # 28
-reportTypedDictNotRequiredAccess = false  # 27
-
 
 [tool.ruff]
 line-length = 100
@@ -302,49 +169,6 @@ extend-ignore = [
 max-complexity = 12
 
 [tool.ruff.lint.per-file-ignores]
-"freqtrade/freqai/**/*.py" = [
-  "S311",  # Standard pseudo-random generators are not suitable for cryptographic purposes
-]
 "tests/**.py" = [
   "S101",  # allow assert in tests
-  "S104",  #  Possible binding to all interfaces
-  "S311",  # Standard pseudo-random generators are not suitable for cryptographic purposes
-  "S105",  # Possible hardcoded password assigned to: "secret"
-  "S106",  # Possible hardcoded password assigned to argument: "token_type"
-  "S110",  # `try`-`except`-`pass` detected, consider logging the exception
-  ]
-
-"freqtrade/templates/**.py" = [
-  "RUF100",  # Allow unused noqa
 ]
-
-"ft_client/test_client/**.py" = [
-  "S101",  # allow assert in tests
-]
-
-[tool.ruff.lint.flake8-bugbear]
-# Allow default arguments like, e.g., `data: List[str] = fastapi.Query(None)`.
-extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
-
-[tool.ruff.lint.isort]
-lines-after-imports = 2
-known-first-party = ["freqtrade_client"]
-
-[tool.flake8]
-# Default from https://flake8.pycqa.org/en/latest/user/options.html#cmdoption-flake8-ignore
-# minus E226
-ignore = ["E121","E123","E126","E24", "E203","E704","W503","W504"]
-max-line-length = 100
-max-complexity = 12
-exclude = [
-    ".git",
-    "__pycache__",
-    ".eggs",
-    "user_data",
-    ".venv",
-    ".env",
-]
-
-[tool.codespell]
-ignore-words-list = "coo,fo,strat,zar,selectin"
-skip="*.svg,./user_data,freqtrade/rpc/api_server/ui/installed,freqtrade/exchange/*.json"

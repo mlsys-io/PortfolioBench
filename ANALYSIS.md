@@ -42,9 +42,6 @@ PortfolioBench/
 ├── portfolio/                  # NEW: Standalone portfolio pipeline
 │   └── PortfolioManagement.py  # 7-step: load → alpha → signals → ONS → blend → backtest → metrics
 │
-├── dataset/                    # NEW: Placeholder for data management
-│   └── main.py
-│
 ├── tests/                      # Unit and integration tests
 │   ├── test_alpha.py           # Alpha factor tests
 │   ├── test_data_integrity.py  # Data integrity tests
@@ -546,7 +543,7 @@ class MyPortfolio(IStrategy):
 2. **No transaction costs for stocks**: Fee = 0.0 (unrealistic for real trading)
 3. **Single exchange format**: All data must use Binance naming convention
 4. **No live trading**: Designed for backtesting only (exchange subclass is for offline use)
-5. **Dataset module is a stub**: `dataset/main.py` is a placeholder
+5. **Dataset module is minimal**: `dataset/main.py` is a placeholder for future data management
 
 ### Future Opportunities
 1. **ML Strategy Integration**: Connect FreqAI or custom ML models via the `IAlpha` interface
