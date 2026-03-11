@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 GDRIVE_FILES = {
     "portfoliobench": {
+        "file_id": "1BxEHMo5l8v7cZRqL-KQ2kP4d_Jxae5Vy",
         "folder_id": "18DqXyrfxDXxibC9gjm9TFzXolhaOBmyk",
         "folder_url": "https://drive.google.com/drive/folders/18DqXyrfxDXxibC9gjm9TFzXolhaOBmyk",
         "archive_name": "usstock_data.tar.gz",
@@ -50,11 +51,65 @@ GDRIVE_FILES = {
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
-def download_from_gdrive(folder_id: str, output_path: str, max_retries: int = 4) -> bool:
-    """Download a folder from Google Drive using gdown.
+def _download_file_direct(gdown_mod, file_id: str, output_path: str) -> bool:
+    """Try downloading a single file directly by its Google Drive file ID.
 
-    Retries with exponential backoff (2s, 4s, 8s, 16s) on failure to handle
-    transient Google Drive rate-limiting and permission errors.
+    Uses gdown.download() with fuzzy=True and use_cookies=True to handle
+    files that require confirmation (large files) or have restricted sharing
+    settings that still allow cookie-based access.
+    """
+    url = f"https://drive.google.com/uc?id={file_id}"
+    os.makedirs(output_path, exist_ok=True)
+    dest = os.path.join(output_path, "archive.tar.gz")
+
+    logger.info("Trying direct file download (file_id=%s)...", file_id)
+    try:
+        result = gdown_mod.download(
+            url, dest, quiet=False, fuzzy=True, use_cookies=True,
+        )
+        if result and os.path.isfile(dest) and os.path.getsize(dest) > 0:
+            logger.info("Direct file download succeeded: %s", dest)
+            return True
+        logger.warning("Direct download returned no file or empty file")
+    except Exception as e:
+        logger.warning("Direct file download failed: %s", e)
+    return False
+
+
+def _download_folder(gdown_mod, folder_id: str, output_path: str) -> bool:
+    """Download an entire Google Drive folder using gdown.download_folder()."""
+    url = f"https://drive.google.com/drive/folders/{folder_id}"
+
+    logger.info("Trying folder download (folder_id=%s)...", folder_id)
+    try:
+        if os.path.isdir(output_path):
+            shutil.rmtree(output_path)
+        os.makedirs(output_path, exist_ok=True)
+
+        gdown_mod.download_folder(url, output=output_path, quiet=False)
+        if os.path.isdir(output_path) and os.listdir(output_path):
+            logger.info("Folder download complete: %s", output_path)
+            return True
+        logger.warning("Folder download produced empty or missing directory")
+    except Exception as e:
+        logger.warning("Folder download failed: %s", e)
+    return False
+
+
+def download_from_gdrive(
+    folder_id: str,
+    output_path: str,
+    max_retries: int = 4,
+    file_id: str | None = None,
+) -> bool:
+    """Download data from Google Drive using gdown.
+
+    Tries two strategies in order:
+      1. Direct file download (if *file_id* is provided) — more reliable for
+         large archives because it bypasses folder-listing permissions.
+      2. Folder download — lists the folder contents and downloads each file.
+
+    Each strategy is retried with exponential backoff (2s, 4s, 8s, 16s).
     """
     try:
         import gdown
@@ -64,36 +119,37 @@ def download_from_gdrive(folder_id: str, output_path: str, max_retries: int = 4)
         )
         return False
 
-    url = f"https://drive.google.com/drive/folders/{folder_id}"
+    strategies: list[tuple[str, ...]] = []
+    if file_id:
+        strategies.append(("direct_file", file_id))
+    strategies.append(("folder", folder_id))
 
-    for attempt in range(1, max_retries + 1):
-        logger.info(
-            "Downloading from Google Drive folder (folder_id=%s) [attempt %d/%d]...",
-            folder_id, attempt, max_retries,
+    for strategy_name, gid in strategies:
+        for attempt in range(1, max_retries + 1):
+            logger.info(
+                "Download strategy=%s id=%s [attempt %d/%d]",
+                strategy_name, gid, attempt, max_retries,
+            )
+
+            if strategy_name == "direct_file":
+                ok = _download_file_direct(gdown, gid, output_path)
+            else:
+                ok = _download_folder(gdown, gid, output_path)
+
+            if ok:
+                return True
+
+            if attempt < max_retries:
+                wait = 2 ** attempt  # 2, 4, 8, 16 seconds
+                logger.info("Retrying in %ds...", wait)
+                time.sleep(wait)
+
+        logger.warning(
+            "All %d attempts failed for strategy=%s id=%s",
+            max_retries, strategy_name, gid,
         )
 
-        try:
-            # Clean output dir before each attempt to avoid partial state
-            if os.path.isdir(output_path):
-                shutil.rmtree(output_path)
-            os.makedirs(output_path, exist_ok=True)
-
-            gdown.download_folder(url, output=output_path, quiet=False)
-            if os.path.isdir(output_path) and os.listdir(output_path):
-                logger.info("Download complete: %s", output_path)
-                return True
-            logger.warning("Download produced empty or missing directory")
-        except Exception as e:
-            logger.warning("Download attempt %d failed: %s", attempt, e)
-
-        if attempt < max_retries:
-            wait = 2 ** attempt  # 2, 4, 8, 16 seconds
-            logger.info("Retrying in %ds...", wait)
-            time.sleep(wait)
-
-    logger.error(
-        "All %d download attempts failed for folder_id=%s", max_retries, folder_id
-    )
+    logger.error("All download strategies exhausted for folder_id=%s", folder_id)
     return False
 
 
@@ -151,7 +207,9 @@ def download_exchange_data(exchange: str, output_dir: str | None = None) -> bool
     with tempfile.TemporaryDirectory() as tmp_dir:
         download_dir = os.path.join(tmp_dir, "gdrive_download")
 
-        if not download_from_gdrive(config["folder_id"], download_dir):
+        if not download_from_gdrive(
+            config["folder_id"], download_dir, file_id=config.get("file_id"),
+        ):
             return False
 
         # Check if downloaded files are an archive or direct feather files
