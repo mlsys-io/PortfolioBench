@@ -1,7 +1,7 @@
 # PortfolioBench
 
 <p align="center">
-  <img src="assets/pixel-landing.svg" alt="PortfolioBench" width="800"/>
+  <img src="assets/pixel-landing.svg" alt="PortfolioBench" width="500"/>
 </p>
 
 A multi-asset portfolio benchmarking framework for backtesting trading strategies and portfolio allocation algorithms across **cryptocurrencies**, **US equities**, **global indices**, and **event prediction markets** (Polymarket).
