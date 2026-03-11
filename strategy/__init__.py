@@ -5,14 +5,7 @@ from strategy.IchimokuCloudStrategy import IchimokuCloudStrategy
 from strategy.StochasticCciStrategy import StochasticCciStrategy
 from strategy.PolymarketMomentumStrategy import PolymarketMomentumStrategy
 from strategy.PolymarketMeanReversionStrategy import PolymarketMeanReversionStrategy
-
-# MlpSpeculativeStrategy requires heavy ML dependencies (scikit-learn, torch,
-# tensorflow) that are not in the base requirements.  Import lazily so the
-# strategy package stays usable without them.
-try:
-    from strategy.MlpSpeculativeStrategy import MlpSpeculativeStrategy
-except ImportError:
-    MlpSpeculativeStrategy = None  # type: ignore[assignment,misc]
+from strategy.MlpSpeculativeStrategy import MlpSpeculativeStrategy
 
 strategy_list = [
     EmaCrossStrategy.__name__,
