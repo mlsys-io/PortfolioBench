@@ -1,0 +1,162 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 280">
+  <defs>
+    <style>
+      .pixel { shape-rendering: crispEdges; }
+      @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.5} }
+      .blink { animation: blink 2s infinite; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="280" fill="#0d1117"/>
+
+  <!-- Grid dots -->
+  <g fill="#161b22" class="pixel">
+    <rect x="0" y="0" width="800" height="280" fill="#0d1117"/>
+    <!-- subtle grid -->
+    <g opacity="0.3">
+      <line x1="0" y1="40" x2="800" y2="40" stroke="#21262d" stroke-width="1"/>
+      <line x1="0" y1="80" x2="800" y2="80" stroke="#21262d" stroke-width="1"/>
+      <line x1="0" y1="120" x2="800" y2="120" stroke="#21262d" stroke-width="1"/>
+      <line x1="0" y1="160" x2="800" y2="160" stroke="#21262d" stroke-width="1"/>
+      <line x1="0" y1="200" x2="800" y2="200" stroke="#21262d" stroke-width="1"/>
+      <line x1="0" y1="240" x2="800" y2="240" stroke="#21262d" stroke-width="1"/>
+    </g>
+  </g>
+
+  <!-- Pixel chart - rising bars (portfolio growth) -->
+  <g class="pixel">
+    <!-- Bar 1 -->
+    <rect x="40" y="200" width="16" height="40" fill="#1a6b3c"/>
+    <rect x="40" y="196" width="16" height="4" fill="#2ea85a"/>
+    <!-- Bar 2 -->
+    <rect x="64" y="180" width="16" height="60" fill="#1a6b3c"/>
+    <rect x="64" y="176" width="16" height="4" fill="#2ea85a"/>
+    <!-- Bar 3 -->
+    <rect x="88" y="192" width="16" height="48" fill="#8b3a3a"/>
+    <rect x="88" y="188" width="16" height="4" fill="#e05252"/>
+    <!-- Bar 4 -->
+    <rect x="112" y="160" width="16" height="80" fill="#1a6b3c"/>
+    <rect x="112" y="156" width="16" height="4" fill="#2ea85a"/>
+    <!-- Bar 5 -->
+    <rect x="136" y="140" width="16" height="100" fill="#1a6b3c"/>
+    <rect x="136" y="136" width="16" height="4" fill="#2ea85a"/>
+    <!-- Bar 6 -->
+    <rect x="160" y="152" width="16" height="88" fill="#8b3a3a"/>
+    <rect x="160" y="148" width="16" height="4" fill="#e05252"/>
+    <!-- Bar 7 -->
+    <rect x="184" y="120" width="16" height="120" fill="#1a6b3c"/>
+    <rect x="184" y="116" width="16" height="4" fill="#2ea85a"/>
+    <!-- Bar 8 -->
+    <rect x="208" y="100" width="16" height="140" fill="#1a6b3c"/>
+    <rect x="208" y="96" width="16" height="4" fill="#2ea85a"/>
+    <!-- Bar 9 -->
+    <rect x="232" y="80" width="16" height="160" fill="#1a6b3c"/>
+    <rect x="232" y="76" width="16" height="4" fill="#2ea85a"/>
+  </g>
+
+  <!-- Pixel trend line -->
+  <g class="pixel" fill="#58a6ff">
+    <rect x="44" y="194" width="4" height="4"/>
+    <rect x="68" y="174" width="4" height="4"/>
+    <rect x="92" y="184" width="4" height="4"/>
+    <rect x="116" y="154" width="4" height="4"/>
+    <rect x="140" y="132" width="4" height="4"/>
+    <rect x="164" y="144" width="4" height="4"/>
+    <rect x="188" y="112" width="4" height="4"/>
+    <rect x="212" y="92" width="4" height="4"/>
+    <rect x="236" y="72" width="4" height="4"/>
+  </g>
+  <!-- connecting lines for trend -->
+  <g stroke="#58a6ff" stroke-width="2" opacity="0.6">
+    <line x1="46" y1="196" x2="70" y2="176"/>
+    <line x1="70" y1="176" x2="94" y2="186"/>
+    <line x1="94" y1="186" x2="118" y2="156"/>
+    <line x1="118" y1="156" x2="142" y2="134"/>
+    <line x1="142" y1="134" x2="166" y2="146"/>
+    <line x1="166" y1="146" x2="190" y2="114"/>
+    <line x1="190" y1="114" x2="214" y2="94"/>
+    <line x1="214" y1="94" x2="238" y2="74"/>
+  </g>
+
+  <!-- Pixel coin / token icon -->
+  <g class="pixel" transform="translate(40, 40)">
+    <!-- coin body -->
+    <rect x="8" y="0" width="16" height="4" fill="#f0b832"/>
+    <rect x="4" y="4" width="24" height="4" fill="#f0b832"/>
+    <rect x="0" y="8" width="32" height="16" fill="#f0b832"/>
+    <rect x="4" y="24" width="24" height="4" fill="#f0b832"/>
+    <rect x="8" y="28" width="16" height="4" fill="#f0b832"/>
+    <!-- dollar sign -->
+    <rect x="14" y="6" width="4" height="4" fill="#0d1117"/>
+    <rect x="10" y="10" width="12" height="4" fill="#0d1117"/>
+    <rect x="10" y="14" width="4" height="4" fill="#0d1117"/>
+    <rect x="10" y="18" width="12" height="4" fill="#0d1117"/>
+    <rect x="18" y="18" width="4" height="4" fill="#0d1117"/>
+    <rect x="14" y="22" width="4" height="4" fill="#0d1117"/>
+  </g>
+
+  <!-- Pixel pie chart icon -->
+  <g class="pixel" transform="translate(100, 40)">
+    <rect x="8" y="0" width="16" height="4" fill="#58a6ff"/>
+    <rect x="4" y="4" width="12" height="4" fill="#58a6ff"/>
+    <rect x="16" y="4" width="12" height="4" fill="#bc8cff"/>
+    <rect x="0" y="8" width="16" height="8" fill="#58a6ff"/>
+    <rect x="16" y="8" width="16" height="8" fill="#bc8cff"/>
+    <rect x="0" y="16" width="16" height="8" fill="#3fb950"/>
+    <rect x="16" y="16" width="16" height="8" fill="#f0b832"/>
+    <rect x="4" y="24" width="12" height="4" fill="#3fb950"/>
+    <rect x="16" y="24" width="12" height="4" fill="#f0b832"/>
+    <rect x="8" y="28" width="16" height="4" fill="#f0b832"/>
+  </g>
+
+  <!-- Title text - "PortfolioBench" in pixel font style -->
+  <text x="300" y="100" font-family="'Courier New', monospace" font-size="48" font-weight="bold" fill="#e6edf3" letter-spacing="2">
+    Portfolio<tspan fill="#58a6ff">Bench</tspan>
+  </text>
+
+  <!-- Subtitle -->
+  <text x="300" y="140" font-family="'Courier New', monospace" font-size="16" fill="#8b949e">
+    Multi-Asset Portfolio Benchmarking Framework
+  </text>
+
+  <!-- Pixel tag badges -->
+  <g transform="translate(300, 160)">
+    <!-- crypto badge -->
+    <rect x="0" y="0" width="80" height="24" rx="2" fill="#1a6b3c" class="pixel"/>
+    <text x="40" y="16" font-family="'Courier New', monospace" font-size="11" fill="#3fb950" text-anchor="middle">CRYPTO</text>
+    <!-- equities badge -->
+    <rect x="90" y="0" width="88" height="24" rx="2" fill="#1a3a6b" class="pixel"/>
+    <text x="134" y="16" font-family="'Courier New', monospace" font-size="11" fill="#58a6ff" text-anchor="middle">EQUITIES</text>
+    <!-- indices badge -->
+    <rect x="188" y="0" width="80" height="24" rx="2" fill="#4a2a6b" class="pixel"/>
+    <text x="228" y="16" font-family="'Courier New', monospace" font-size="11" fill="#bc8cff" text-anchor="middle">INDICES</text>
+    <!-- polymarket badge -->
+    <rect x="278" y="0" width="104" height="24" rx="2" fill="#6b4a1a" class="pixel"/>
+    <text x="330" y="16" font-family="'Courier New', monospace" font-size="11" fill="#f0b832" text-anchor="middle">POLYMARKET</text>
+  </g>
+
+  <!-- Stats row -->
+  <g transform="translate(300, 210)">
+    <text font-family="'Courier New', monospace" font-size="28" font-weight="bold" fill="#3fb950">119</text>
+    <text x="0" y="22" font-family="'Courier New', monospace" font-size="11" fill="#8b949e">instruments</text>
+
+    <text x="120" font-family="'Courier New', monospace" font-size="28" font-weight="bold" fill="#58a6ff">16</text>
+    <text x="120" y="22" font-family="'Courier New', monospace" font-size="11" fill="#8b949e">strategies</text>
+
+    <text x="220" font-family="'Courier New', monospace" font-size="28" font-weight="bold" fill="#bc8cff">5</text>
+    <text x="220" y="22" font-family="'Courier New', monospace" font-size="11" fill="#8b949e">alpha factors</text>
+
+    <text x="350" font-family="'Courier New', monospace" font-size="28" font-weight="bold" fill="#f0b832">4</text>
+    <text x="350" y="22" font-family="'Courier New', monospace" font-size="11" fill="#8b949e">asset classes</text>
+  </g>
+
+  <!-- Blinking cursor -->
+  <rect x="740" y="252" width="12" height="16" fill="#58a6ff" class="blink pixel"/>
+
+  <!-- Bottom pixel decoration -->
+  <g class="pixel" opacity="0.15">
+    <rect x="0" y="268" width="800" height="4" fill="#58a6ff"/>
+    <rect x="0" y="272" width="800" height="8" fill="#1a3a6b"/>
+  </g>
+</svg>

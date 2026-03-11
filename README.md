@@ -1,5 +1,9 @@
 # PortfolioBench
 
+<p align="center">
+  <img src="assets/pixel-landing.svg" alt="PortfolioBench" width="800"/>
+</p>
+
 A multi-asset portfolio benchmarking framework for backtesting trading strategies and portfolio allocation algorithms across **cryptocurrencies**, **US equities**, **global indices**, and **event prediction markets** (Polymarket).
 
 PortfolioBench ships with 119 instruments, 16 strategies, 5 alpha factors, and a full benchmarking suite — so you can evaluate portfolio ideas out of the box.
