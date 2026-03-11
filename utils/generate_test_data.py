@@ -12,7 +12,8 @@ and user_data/data/portfoliobench/ (for freqtrade backtesting with the
 portfoliobench exchange).
 
 Usage:
-    python utils/generate_test_data.py
+    portbench generate-data                          # via CLI (recommended)
+    python utils/generate_test_data.py               # or directly
 """
 import pandas as pd
 import numpy as np

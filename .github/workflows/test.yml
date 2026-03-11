@@ -69,7 +69,7 @@ jobs:
           pip install -e .
 
       - name: Generate synthetic test data
-        run: python utils/generate_test_data.py
+        run: portbench generate-data
 
       - name: Run unit tests
         run: pytest tests/ -v --tb=short
@@ -216,10 +216,10 @@ jobs:
           pip install -e .
 
       - name: Generate synthetic test data
-        run: python utils/generate_test_data.py
+        run: portbench generate-data
 
       - name: Run standalone portfolio pipeline
-        run: python -m portfolio.PortfolioManagement
+        run: portbench portfolio
 
   # ---------------------------------------------------------------------------
   # Job 5: Backtest smoke tests (crypto-only, fast timerange)
@@ -256,11 +256,11 @@ jobs:
           pip install -e .
 
       - name: Generate synthetic test data
-        run: python utils/generate_test_data.py
+        run: portbench generate-data
 
       - name: Backtest EmaCrossStrategy (crypto, 1d)
         run: |
-          freqtrade backtesting \
+          portbench backtesting \
             --strategy EmaCrossStrategy \
             --strategy-path ./strategy \
             --timeframe 1d \
@@ -269,7 +269,7 @@ jobs:
 
       - name: Backtest MacdAdxStrategy (stocks, 1d)
         run: |
-          freqtrade backtesting \
+          portbench backtesting \
             --strategy MacdAdxStrategy \
             --strategy-path ./strategy \
             --timeframe 1d \
@@ -278,7 +278,7 @@ jobs:
 
       - name: Backtest ONS_Portfolio (mixed, 5m, short range)
         run: |
-          freqtrade backtesting \
+          portbench backtesting \
             --strategy ONS_Portfolio \
             --strategy-path ./user_data/strategies \
             --timeframe 5m \

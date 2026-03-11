@@ -8,6 +8,7 @@ Simple portfolio construction script that combines:
   4. Naïve 1/N equal-weight allocation as the baseline
 
 Usage:
+    portbench portfolio                              # via CLI (recommended)
     python -m portfolio.PortfolioManagement          # run from project root (PortfolioBench/)
     python portfolio/PortfolioManagement.py          # or directly
 """
