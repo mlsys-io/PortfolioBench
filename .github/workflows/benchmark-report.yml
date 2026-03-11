@@ -109,18 +109,41 @@ jobs:
           pip install scipy pytest gdown
           pip install -e .
 
-      # ── Download real data from Google Drive ──
+      # ── Cache OHLCV data from Google Drive ──
+      - name: Cache OHLCV feather data
+        id: cache-data
+        uses: actions/cache@v4
+        with:
+          path: user_data/data/usstock
+          key: ohlcv-feather-data-v1
+          enableCrossOsArchive: true
+
+      # ── Download real data from Google Drive (skip if cached) ──
       - name: Download data from Google Drive
         id: download-data
+        if: steps.cache-data.outputs.cache-hit != 'true'
         run: |
           python utils/download_data.py --exchange portfoliobench
         continue-on-error: true
 
-      # ── Fallback: generate synthetic data if download fails ──
-      - name: Fallback to synthetic data
-        if: steps.download-data.outcome == 'failure'
+      # ── Verify data exists (from cache or download) ──
+      - name: Verify data availability
+        id: verify-data
         run: |
-          echo "Google Drive download failed — falling back to synthetic data"
+          COUNT=$(find user_data/data/usstock -name '*.feather' 2>/dev/null | wc -l)
+          echo "feather_count=$COUNT" >> "$GITHUB_OUTPUT"
+          echo "Found $COUNT feather files in data directory"
+          if [ "$COUNT" -gt 0 ]; then
+            echo "data_available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "data_available=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── Fallback: generate synthetic data if no real data available ──
+      - name: Fallback to synthetic data
+        if: steps.verify-data.outputs.data_available == 'false'
+        run: |
+          echo "No feather data available — falling back to synthetic data"
           portbench generate-data
 
       # ── Determine benchmark flags ──
