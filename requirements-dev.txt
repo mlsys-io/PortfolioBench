@@ -1,11 +1,5 @@
 # Include all requirements to run the bot.
 -r requirements.txt
--r requirements-plot.txt
--r requirements-hyperopt.txt
--r requirements-freqai.txt
--r requirements-freqai-rl.txt
--r requirements-new.txt
-# -r docs/requirements-docs.txt
 
 ruff==0.14.14
 mypy==1.19.1

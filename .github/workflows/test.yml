@@ -8,6 +8,8 @@ on:
 
 env:
   GIT_LFS_SKIP_SMUDGE: "1"
+  TALIB_VERSION: "0.6.4"
+  PYTHON_VERSION: "3.11"
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -23,7 +25,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install minimal dependencies
         run: |
@@ -31,11 +33,10 @@ jobs:
           pip install pyflakes
 
       - name: Check Python syntax (all project modules)
-        run: |
-          pyflakes alpha/ strategy/ portfolio/ user_data/strategies/ dataset/
+        run: pyflakes alpha/ strategy/ portfolio/ user_data/strategies/ dataset/
 
   # ---------------------------------------------------------------------------
-  # Job 2: Unit tests for pure-Python portfolio logic (no freqtrade needed)
+  # Job 2: Unit tests
   # ---------------------------------------------------------------------------
   unit-tests:
     name: Unit Tests
@@ -43,23 +44,43 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: recursive
           lfs: false
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install system dependencies (TA-Lib)
+      - name: Cache TA-Lib
+        id: cache-talib
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/lib/libta_lib*
+            /usr/include/ta-lib/
+            /usr/include/ta_*.h
+          key: talib-${{ env.TALIB_VERSION }}-ubuntu-latest
+
+      - name: Build TA-Lib from source
+        if: steps.cache-talib.outputs.cache-hit != 'true'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential wget
-          wget https://github.com/ta-lib/ta-lib/releases/download/v0.6.4/ta-lib-0.6.4-src.tar.gz
-          tar -xzf ta-lib-0.6.4-src.tar.gz
-          cd ta-lib-0.6.4
+          sudo apt-get update && sudo apt-get install -y build-essential wget
+          wget https://github.com/ta-lib/ta-lib/releases/download/v${{ env.TALIB_VERSION }}/ta-lib-${{ env.TALIB_VERSION }}-src.tar.gz
+          tar -xzf ta-lib-${{ env.TALIB_VERSION }}-src.tar.gz
+          cd ta-lib-${{ env.TALIB_VERSION }}
           ./configure --prefix=/usr
           make -j$(nproc)
           sudo make install
-          sudo ldconfig
+
+      - name: Refresh linker cache
+        run: sudo ldconfig
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ env.PYTHON_VERSION }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: pip-${{ env.PYTHON_VERSION }}-
 
       - name: Install dependencies
         run: |
@@ -75,7 +96,7 @@ jobs:
         run: pytest tests/ -v --tb=short
 
   # ---------------------------------------------------------------------------
-  # Job 3: Strategy import validation (ensures all strategies load correctly)
+  # Job 3: Strategy import validation
   # ---------------------------------------------------------------------------
   strategy-import:
     name: Strategy Import Validation
@@ -83,23 +104,43 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: recursive
           lfs: false
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install system dependencies (TA-Lib)
+      - name: Cache TA-Lib
+        id: cache-talib
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/lib/libta_lib*
+            /usr/include/ta-lib/
+            /usr/include/ta_*.h
+          key: talib-${{ env.TALIB_VERSION }}-ubuntu-latest
+
+      - name: Build TA-Lib from source
+        if: steps.cache-talib.outputs.cache-hit != 'true'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential wget
-          wget https://github.com/ta-lib/ta-lib/releases/download/v0.6.4/ta-lib-0.6.4-src.tar.gz
-          tar -xzf ta-lib-0.6.4-src.tar.gz
-          cd ta-lib-0.6.4
+          sudo apt-get update && sudo apt-get install -y build-essential wget
+          wget https://github.com/ta-lib/ta-lib/releases/download/v${{ env.TALIB_VERSION }}/ta-lib-${{ env.TALIB_VERSION }}-src.tar.gz
+          tar -xzf ta-lib-${{ env.TALIB_VERSION }}-src.tar.gz
+          cd ta-lib-${{ env.TALIB_VERSION }}
           ./configure --prefix=/usr
           make -j$(nproc)
           sudo make install
-          sudo ldconfig
+
+      - name: Refresh linker cache
+        run: sudo ldconfig
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ env.PYTHON_VERSION }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: pip-${{ env.PYTHON_VERSION }}-
 
       - name: Install Python dependencies
         run: |
@@ -182,7 +223,7 @@ jobs:
           "
 
   # ---------------------------------------------------------------------------
-  # Job 4: Portfolio pipeline smoke test (runs the standalone pipeline)
+  # Job 4: Portfolio pipeline smoke test
   # ---------------------------------------------------------------------------
   portfolio-pipeline:
     name: Portfolio Pipeline Smoke Test
@@ -190,23 +231,43 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: recursive
           lfs: false
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install system dependencies (TA-Lib)
+      - name: Cache TA-Lib
+        id: cache-talib
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/lib/libta_lib*
+            /usr/include/ta-lib/
+            /usr/include/ta_*.h
+          key: talib-${{ env.TALIB_VERSION }}-ubuntu-latest
+
+      - name: Build TA-Lib from source
+        if: steps.cache-talib.outputs.cache-hit != 'true'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential wget
-          wget https://github.com/ta-lib/ta-lib/releases/download/v0.6.4/ta-lib-0.6.4-src.tar.gz
-          tar -xzf ta-lib-0.6.4-src.tar.gz
-          cd ta-lib-0.6.4
+          sudo apt-get update && sudo apt-get install -y build-essential wget
+          wget https://github.com/ta-lib/ta-lib/releases/download/v${{ env.TALIB_VERSION }}/ta-lib-${{ env.TALIB_VERSION }}-src.tar.gz
+          tar -xzf ta-lib-${{ env.TALIB_VERSION }}-src.tar.gz
+          cd ta-lib-${{ env.TALIB_VERSION }}
           ./configure --prefix=/usr
           make -j$(nproc)
           sudo make install
-          sudo ldconfig
+
+      - name: Refresh linker cache
+        run: sudo ldconfig
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ env.PYTHON_VERSION }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: pip-${{ env.PYTHON_VERSION }}-
 
       - name: Install Python dependencies
         run: |
@@ -222,7 +283,7 @@ jobs:
         run: portbench portfolio
 
   # ---------------------------------------------------------------------------
-  # Job 5: Backtest smoke tests (crypto-only, fast timerange)
+  # Job 5: Backtest smoke tests
   # ---------------------------------------------------------------------------
   backtest-smoke:
     name: Backtest Smoke Tests
@@ -230,23 +291,43 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: recursive
           lfs: false
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install system dependencies (TA-Lib)
+      - name: Cache TA-Lib
+        id: cache-talib
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/lib/libta_lib*
+            /usr/include/ta-lib/
+            /usr/include/ta_*.h
+          key: talib-${{ env.TALIB_VERSION }}-ubuntu-latest
+
+      - name: Build TA-Lib from source
+        if: steps.cache-talib.outputs.cache-hit != 'true'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential wget
-          wget https://github.com/ta-lib/ta-lib/releases/download/v0.6.4/ta-lib-0.6.4-src.tar.gz
-          tar -xzf ta-lib-0.6.4-src.tar.gz
-          cd ta-lib-0.6.4
+          sudo apt-get update && sudo apt-get install -y build-essential wget
+          wget https://github.com/ta-lib/ta-lib/releases/download/v${{ env.TALIB_VERSION }}/ta-lib-${{ env.TALIB_VERSION }}-src.tar.gz
+          tar -xzf ta-lib-${{ env.TALIB_VERSION }}-src.tar.gz
+          cd ta-lib-${{ env.TALIB_VERSION }}
           ./configure --prefix=/usr
           make -j$(nproc)
           sudo make install
-          sudo ldconfig
+
+      - name: Refresh linker cache
+        run: sudo ldconfig
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ env.PYTHON_VERSION }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: pip-${{ env.PYTHON_VERSION }}-
 
       - name: Install Python dependencies
         run: |
