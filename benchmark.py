@@ -221,7 +221,8 @@ def run_single_backtest(
 
         config = setup_optimize_configuration(args, RunMode.BACKTEST)
         bt = Backtesting(config)
-        bt_results = bt.start()
+        bt.start()
+        bt_results = bt.results
 
         # Extract results from the backtest
         metrics = _extract_backtest_metrics(bt_results, strategy_name)
@@ -253,11 +254,18 @@ def _extract_backtest_metrics(bt_results: Any, strategy_name: str) -> Dict[str, 
         return metrics
 
     try:
-        # bt_results is typically a dict keyed by strategy name
-        if isinstance(bt_results, dict) and strategy_name in bt_results:
+        # bt.results has structure {"strategy": {name: stats}, "metadata": {...}, ...}
+        if isinstance(bt_results, dict) and "strategy" in bt_results:
+            strat_dict = bt_results["strategy"]
+            if isinstance(strat_dict, dict) and strategy_name in strat_dict:
+                strat_result = strat_dict[strategy_name]
+            elif isinstance(strat_dict, dict):
+                first_key = next(iter(strat_dict), None)
+                strat_result = strat_dict.get(first_key, bt_results)
+            else:
+                strat_result = bt_results
+        elif isinstance(bt_results, dict) and strategy_name in bt_results:
             strat_result = bt_results[strategy_name]
-        elif isinstance(bt_results, dict) and "strategy" in bt_results:
-            strat_result = bt_results
         elif isinstance(bt_results, dict):
             first_key = next(iter(bt_results), None)
             strat_result = bt_results.get(first_key, bt_results)
@@ -285,8 +293,11 @@ def _extract_backtest_metrics(bt_results: Any, strategy_name: str) -> Dict[str, 
 
         # ── Extract trades ──
         for d in candidates:
-            if "trade_count" in d:
-                metrics["trades"] = d["trade_count"]
+            for key in ["total_trades", "trade_count"]:
+                if key in d:
+                    metrics["trades"] = d[key]
+                    break
+            if "trades" in metrics:
                 break
         if "trades" not in metrics:
             trades_df = strat_result.get("trades")
@@ -350,9 +361,9 @@ def _extract_backtest_metrics(bt_results: Any, strategy_name: str) -> Dict[str, 
 
         # ── Extract win rate ──
         for d in candidates:
-            for key in ["win_rate", "wins", "winning_trades"]:
+            for key in ["winrate", "win_rate", "wins", "winning_trades"]:
                 if key in d and d[key] is not None:
-                    if key == "win_rate":
+                    if key in ("winrate", "win_rate"):
                         metrics["win_rate_pct"] = round(float(d[key]) * 100, 2)
                     elif "trades" in metrics and metrics["trades"] > 0:
                         metrics["win_rate_pct"] = round(

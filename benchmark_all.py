@@ -349,7 +349,17 @@ def _extract_metrics(bt_results: Any, strategy_name: str) -> Dict[str, Any]:
 
     try:
         # Navigate to the strategy-level result dict
-        if isinstance(bt_results, dict) and strategy_name in bt_results:
+        # bt.results has structure {"strategy": {name: stats}, "metadata": {...}, ...}
+        if isinstance(bt_results, dict) and "strategy" in bt_results:
+            strat_dict = bt_results["strategy"]
+            if isinstance(strat_dict, dict) and strategy_name in strat_dict:
+                sr = strat_dict[strategy_name]
+            elif isinstance(strat_dict, dict):
+                first_key = next(iter(strat_dict), None)
+                sr = strat_dict.get(first_key, bt_results)
+            else:
+                sr = bt_results
+        elif isinstance(bt_results, dict) and strategy_name in bt_results:
             sr = bt_results[strategy_name]
         elif isinstance(bt_results, dict):
             first_key = next(iter(bt_results), None)
@@ -374,6 +384,7 @@ def _extract_metrics(bt_results: Any, strategy_name: str) -> Dict[str, Any]:
 
         # Search for common metric keys across all candidates
         _METRIC_MAP = {
+            "total_trades": ("trades", None),
             "trade_count": ("trades", None),
             "profit_total": ("total_return_pct", lambda v: round(v * 100, 2)),
             "profit_total_abs": ("profit_abs", lambda v: round(v, 2)),
@@ -384,6 +395,7 @@ def _extract_metrics(bt_results: Any, strategy_name: str) -> Dict[str, Any]:
             "sortino": ("sortino", lambda v: round(v, 4)),
             "sortino_ratio": ("sortino", lambda v: round(v, 4)),
             "calmar": ("calmar", lambda v: round(v, 4)),
+            "winrate": ("win_rate_pct", lambda v: round(v * 100, 2)),
             "win_rate": ("win_rate_pct", lambda v: round(v * 100, 2)),
             "profit_factor": ("profit_factor", lambda v: round(v, 4)),
             "profit_mean": ("avg_profit_pct", lambda v: round(v * 100, 2)),
@@ -439,7 +451,8 @@ def _run_single_backtest(
     backtesting = Backtesting(config)
 
     try:
-        bt_results = backtesting.start()
+        backtesting.start()
+        bt_results = backtesting.results
         # Extract key metrics from the result dict
         metrics = _extract_metrics(bt_results, strategy_name)
         return {"status": "ok", "metrics": metrics}
