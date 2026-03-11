@@ -1,5 +1,6 @@
 # Include all requirements to run the bot.
 -r requirements.txt
+-r requirements-ml.txt
 
 ruff==0.14.14
 mypy==1.19.1
