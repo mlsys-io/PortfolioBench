@@ -26,6 +26,10 @@ from scipy.optimize import minimize
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
+# freqtrade lives in a git submodule; add its root so `import freqtrade` resolves.
+_FT_ROOT = os.path.join(PROJECT_ROOT, "freqtrade")
+if os.path.isdir(os.path.join(_FT_ROOT, "freqtrade")) and _FT_ROOT not in sys.path:
+    sys.path.insert(0, _FT_ROOT)
 
 from alpha.SimpleEmaFactors import EmaAlpha  # reuse existing alpha factor
 

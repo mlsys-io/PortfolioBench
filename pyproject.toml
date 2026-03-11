@@ -149,8 +149,8 @@ include-package-data = true
 zip-safe = false
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["freqtrade*", "dataset*", "portfolio*", "strategy*", "alpha*", "utils*"]
+where = [".", "freqtrade"]
+include = ["freqtrade*", "ft_client*", "dataset*", "portfolio*", "strategy*", "alpha*", "utils*"]
 exclude = ["tests", "tests.*", "user_data", "user_data*"]
 namespaces = true
 
