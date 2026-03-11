@@ -127,12 +127,13 @@ jobs:
           path: |
             user_data/data/usstock
             user_data/data/portfoliobench
-          key: benchmark-data-portfoliobench-v1
+          key: benchmark-data-portfoliobench-v2
 
       # ── Download real data from Google Drive (skip if cached) ──
       - name: Download data from Google Drive
         id: download-data
         if: steps.cache-data.outputs.cache-hit != 'true'
+        timeout-minutes: 10
         run: |
           python utils/download_data.py --exchange portfoliobench
         continue-on-error: true
