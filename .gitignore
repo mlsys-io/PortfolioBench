@@ -12,7 +12,9 @@ user_data/*
 !user_data/models
 !user_data/freqaimodels
 !user_data/data/
-# Synthetic data generated at test time (not LFS-tracked)
+# Downloaded data (from Google Drive) and synthetic test data — not tracked in git
+user_data/data/usstock/
+user_data/data/polymarket/
 user_data/data/portfoliobench/
 user_data/freqaimodels/*
 user_data/models/*

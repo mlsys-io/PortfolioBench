@@ -65,7 +65,7 @@ PortfolioBench/
 │   │   ├── max_sharpe.py       # Maximum Sharpe Ratio optimization
 │   │   ├── risk_parity.py      # Risk Parity allocation
 │   │   └── polymarket_portfolio.py # Polymarket portfolio strategy
-│   └── data/binance/           # Pre-downloaded OHLCV data (357 feather files)
+│   └── data/usstock/           # OHLCV data from Google Drive (357 feather files)
 │       ├── BTC_USDT-{5m,4h,1d}.feather    # Crypto (10 assets, _USDT suffix)
 │       ├── AAPL_USD-{5m,4h,1d}.feather    # US Stocks (~100 assets, _USD suffix)
 │       └── DJI_USD-{5m,4h,1d}.feather     # Indices (9 indices, _USD suffix)
@@ -316,7 +316,7 @@ AAPL, MSFT, NVDA, GOOG, AMZN, META, TSLA, JPM, MA, V, UNH, HD, PG, JNJ, LLY, AVG
 DJI (Dow Jones), GSPC (S&P 500), IXIC (Nasdaq), RUT (Russell 2000), FTSE (UK), N225 (Nikkei), HSI (Hang Seng), STOXX50E (Euro Stoxx 50), VIX
 
 ### 8.2 Data Format
-All data stored as feather files in `user_data/data/binance/`:
+All data stored as feather files in `user_data/data/usstock/`:
 - Crypto: `{TICKER}_USDT-{timeframe}.feather` (e.g. `BTC_USDT-1d.feather`)
 - Stocks & indices: `{TICKER}_USD-{timeframe}.feather` (e.g. `AAPL_USD-1d.feather`)
 
@@ -347,7 +347,7 @@ Defines 4 asset categories × 3 timeframes = 12 test configurations:
 source .venv/bin/activate
 
 # Crypto-only backtest with EMA Cross strategy
-freqtrade backtesting \
+portbench backtesting \
     --strategy EmaCrossStrategy \
     --strategy-path ./strategy \
     --timeframe 4h \
@@ -355,7 +355,7 @@ freqtrade backtesting \
     --pairs BTC/USDT ETH/USDT SOL/USDT XRP/USDT
 
 # Stock backtest with MACD+ADX strategy
-freqtrade backtesting \
+portbench backtesting \
     --strategy MacdAdxStrategy \
     --strategy-path ./strategy \
     --timeframe 1d \
@@ -363,7 +363,7 @@ freqtrade backtesting \
     --pairs AAPL/USD MSFT/USD NVDA/USD GOOG/USD
 
 # Portfolio strategy (ONS) across mixed assets
-freqtrade backtesting \
+portbench backtesting \
     --strategy ONS_Portfolio \
     --strategy-path ./user_data/strategies \
     --timeframe 5m \
@@ -399,7 +399,7 @@ bash utils/backtest_script.bash -s EmaCrossStrategy -a "BTC/USDT ETH/USDT"
 
 ```bash
 # Optimize EMA parameters
-freqtrade hyperopt \
+portbench hyperopt \
     --strategy EmaCrossStrategy \
     --strategy-path ./strategy \
     --hyperopt-loss SharpeHyperOptLoss \
@@ -409,7 +409,7 @@ freqtrade hyperopt \
     --epochs 100
 
 # Optimize MACD+ADX parameters
-freqtrade hyperopt \
+portbench hyperopt \
     --strategy MacdAdxStrategy \
     --strategy-path ./strategy \
     --hyperopt-loss SharpeHyperOptLoss \
@@ -522,7 +522,7 @@ class MyPortfolio(IStrategy):
 
 1. Prepare OHLCV data as feather files with columns: `date, open, high, low, close, volume`
 2. Name files as `{TICKER}_USDT-{timeframe}.feather` (crypto) or `{TICKER}_USD-{timeframe}.feather` (stocks/indices)
-3. Place in `user_data/data/binance/`
+3. Place in `user_data/data/usstock/`
 4. Add pairs to config whitelist or pass via `--pairs` CLI flag
 5. The `Portfoliobench` exchange subclass will auto-inject synthetic market entries
 

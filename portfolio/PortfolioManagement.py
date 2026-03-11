@@ -39,7 +39,7 @@ def load_pair_data(data_dir: str, pairs: List[str], timeframe: str = "1d") -> Di
 
     Parameters
     ----------
-    data_dir  : path to the exchange data folder, e.g. "user_data/data/binance"
+    data_dir  : path to the exchange data folder, e.g. "user_data/data/usstock"
     pairs     : list of pair strings like ["BTC/USDT", "ETH/USDT", ...]
     timeframe : candle timeframe suffix used in filenames (default "1d")
 
@@ -384,7 +384,7 @@ def run_portfolio(
     """
     # -- defaults --
     if data_dir is None:
-        data_dir = os.path.join(PROJECT_ROOT, "user_data", "data", "binance")
+        data_dir = os.path.join(PROJECT_ROOT, "user_data", "data", "usstock")
     if pairs is None:
         pairs = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT", "MSFT/USD"]
 

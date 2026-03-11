@@ -5,7 +5,7 @@ import glob
 import pandas as pd
 import pytest
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "user_data", "data", "binance")
+DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "user_data", "data", "usstock")
 REQUIRED_COLUMNS = {"date", "open", "high", "low", "close", "volume"}
 
 # Representative subset: one crypto, one stock, one index per timeframe
@@ -28,7 +28,7 @@ def _feather_available():
     return not header.startswith(b"version ")
 
 
-@pytest.mark.skipif(not _feather_available(), reason="Data files not available (LFS not pulled)")
+@pytest.mark.skipif(not _feather_available(), reason="Data files not available (run: portbench download-data --exchange portfoliobench)")
 class TestDataIntegrity:
     @pytest.mark.parametrize("filename", SAMPLE_FILES)
     def test_required_columns_present(self, filename):

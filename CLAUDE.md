@@ -10,20 +10,20 @@ PortfolioBench is a multi-asset portfolio benchmarking framework wrapping freqtr
 - `portfolio/` — Standalone portfolio construction pipeline
 - `dataset/` — Data management (stub)
 - `tests/` — Unit and integration tests (alpha, data integrity, portfolio management)
-- `benchmark.py` / `benchmark_all.py` — Benchmarking scripts
+- `benchmark.py` / `benchmark_all.py` — Benchmarking scripts (also accessible via `portbench benchmark`)
 - `user_data/strategies/` — Portfolio-optimization strategies (ONS, MinVar, InvVol, BestSingleAsset, ExpGradient, MaxSharpe, RiskParity, Polymarket)
 - `user_data/config.json` — Main backtesting config; `user_data/config_polymarket.json` — Polymarket config
-- `user_data/data/binance/` — Pre-downloaded OHLCV feather files (119 instruments × 3 timeframes = 357 files)
+- `user_data/data/usstock/` — OHLCV feather files downloaded from Google Drive (119 instruments × 3 timeframes = 357 files)
 - `utils/` — Bash scripts for backtesting, data generation, and testing
 
 ## Key Commands
 
 ```bash
 # Backtest a trading strategy
-freqtrade backtesting --strategy EmaCrossStrategy --strategy-path ./strategy --timeframe 4h --timerange 20250101-20250601 --pairs BTC/USDT ETH/USDT
+portbench backtesting --strategy EmaCrossStrategy --strategy-path ./strategy --timeframe 4h --timerange 20250101-20250601 --pairs BTC/USDT ETH/USDT
 
 # Backtest a portfolio strategy
-freqtrade backtesting --strategy ONS_Portfolio --strategy-path ./user_data/strategies --timeframe 5m --timerange 20260101-20260108 --pairs BTC/USDT ETH/USDT AAPL/USD --dry-run-wallet 1000000
+portbench backtesting --strategy ONS_Portfolio --strategy-path ./user_data/strategies --timeframe 5m --timerange 20260101-20260108 --pairs BTC/USDT ETH/USDT AAPL/USD --dry-run-wallet 1000000
 
 # Run standalone portfolio pipeline
 python -m portfolio.PortfolioManagement
@@ -42,9 +42,15 @@ bash utils/backtest_tests.bash
 3. For portfolio algorithms: implement `IStrategy` with `position_adjustment_enable=True` in `user_data/strategies/`
 
 ## Adding New Assets
-Place feather files in `user_data/data/binance/`:
+Place feather files in `user_data/data/usstock/`:
 - Crypto: `{TICKER}_USDT-{timeframe}.feather` (e.g. `BTC_USDT-1d.feather`)
 - Stocks & indices: `{TICKER}_USD-{timeframe}.feather` (e.g. `AAPL_USD-1d.feather`)
+
+To download the pre-built dataset from Google Drive, run:
+```bash
+pip install gdown
+portbench download-data --exchange portfoliobench
+```
 
 The `Portfoliobench` exchange subclass auto-injects synthetic market entries for any pair not found on the real exchange.
 
