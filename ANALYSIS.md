@@ -26,6 +26,9 @@ PortfolioBench/
 ├── alpha/                      # NEW: Pluggable alpha-factor system
 │   ├── interface.py            # IAlpha abstract base class
 │   ├── SimpleEmaFactors.py     # EmaAlpha: EMA fast/slow/exit + rolling mean volume
+│   ├── RsiAlpha.py             # RsiAlpha: RSI, RSI signal line, overbought/oversold flags
+│   ├── MacdAlpha.py            # MacdAlpha: MACD line, signal line, histogram
+│   ├── BollingerAlpha.py       # BollingerAlpha: upper/middle/lower bands, bandwidth, %B
 │   └── PolymarketFactors.py    # PolymarketAlpha: prediction-market factors
 │
 ├── strategy/                   # NEW: Freqtrade IStrategy implementations (8 strategies)
@@ -49,6 +52,11 @@ PortfolioBench/
 │
 ├── benchmark.py                # Single strategy benchmarking script
 ├── benchmark_all.py            # Full benchmarking matrix runner
+├── cli.py                      # CLI entry point (portbench command)
+├── generate_report.py          # Report generation utilities
+│
+├── dataset/                    # Data management module (placeholder for future use)
+│   └── main.py                 # Placeholder data manager
 │
 ├── user_data/
 │   ├── config.json             # Backtesting configuration (portfoliobench exchange)
@@ -71,6 +79,7 @@ PortfolioBench/
     ├── backtest_script.bash    # Simple CLI backtest launcher
     ├── backtest_tests.bash     # Comprehensive test harness (4 categories × 3 timeframes)
     ├── backtest_polymarket.bash        # Polymarket backtesting script
+    ├── download_data.py                # General data downloader
     ├── download_polymarket_data.py     # Polymarket data downloader
     ├── generate_polymarket_test_data.py # Polymarket test data generator
     ├── generate_test_data.py           # General test data generator
