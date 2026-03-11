@@ -38,7 +38,7 @@ if PROJECT_ROOT not in sys.path:
 # CONSTANTS
 # ═══════════════════════════════════════════════════════════════════════════
 
-DATA_DIR = os.path.join(PROJECT_ROOT, "user_data", "data", "binance")
+DATA_DIR = os.path.join(PROJECT_ROOT, "user_data", "data", "usstock")
 
 TRADING_STRATEGIES = [
     "EmaCrossStrategy",

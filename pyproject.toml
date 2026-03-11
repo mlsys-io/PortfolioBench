@@ -138,6 +138,7 @@ Documentation = "https://freqtrade.io"
 
 
 [project.scripts]
+portbench = "freqtrade.main:main"
 freqtrade = "freqtrade.main:main"
 download = "dataset.main:main"
 strategy_test = "utils.test:main"

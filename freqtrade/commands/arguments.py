@@ -185,6 +185,24 @@ ARGS_DOWNLOAD_DATA = [
     "prepend_data",
 ]
 
+ARGS_BENCHMARK = [
+    "quick",
+    "trading_only",
+    "portfolio_only",
+    "benchmark_export",
+]
+
+ARGS_BENCHMARK_ALL = [
+    "quick",
+    "trading_only",
+    "portfolio_only",
+    "skip_backtests",
+    "strategies",
+    "benchmark_timeframes",
+    "benchmark_categories",
+    "json_output",
+]
+
 ARGS_PLOT_DATAFRAME = [
     "pairs",
     "indicators1",
@@ -378,7 +396,8 @@ class Arguments:
 
         # Build main command
         self.parser = ArgumentParser(
-            prog="freqtrade", description="Free, open source crypto trading bot"
+            prog="portbench",
+            description="PortfolioBench — multi-asset portfolio benchmarking framework",
         )
         self._build_args(optionlist=ARGS_MAIN, parser=self.parser)
 
@@ -386,6 +405,8 @@ class Arguments:
             start_analysis_entries_exits,
             start_backtesting,
             start_backtesting_show,
+            start_benchmark,
+            start_benchmark_all,
             start_convert_data,
             start_convert_db,
             start_convert_trades,
@@ -716,3 +737,21 @@ class Arguments:
         recursive_analayis_cmd.set_defaults(func=start_recursive_analysis)
 
         self._build_args(optionlist=ARGS_RECURSIVE_ANALYSIS, parser=recursive_analayis_cmd)
+
+        # Add benchmark subcommand (PortfolioBench)
+        benchmark_cmd = subparsers.add_parser(
+            "benchmark",
+            help="Run the PortfolioBench benchmarking suite.",
+            parents=[_common_parser],
+        )
+        benchmark_cmd.set_defaults(func=start_benchmark)
+        self._build_args(optionlist=ARGS_BENCHMARK, parser=benchmark_cmd)
+
+        # Add benchmark-all subcommand (PortfolioBench — full matrix)
+        benchmark_all_cmd = subparsers.add_parser(
+            "benchmark-all",
+            help="Run the full PortfolioBench benchmark matrix with detailed reports.",
+            parents=[_common_parser],
+        )
+        benchmark_all_cmd.set_defaults(func=start_benchmark_all)
+        self._build_args(optionlist=ARGS_BENCHMARK_ALL, parser=benchmark_all_cmd)

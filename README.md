@@ -18,15 +18,15 @@ PortfolioBench ships with 119 instruments, 16 strategies, 5 alpha factors, and a
 
 ## Data Setup
 
-OHLCV data is hosted on Google Drive. Use the freqtrade CLI to download it:
+OHLCV data is hosted on Google Drive. Use the `portbench` CLI to download it:
 
 ```bash
 pip install gdown
-freqtrade download-data --exchange portfoliobench   # crypto + US stocks + global indices
-freqtrade download-data --exchange polymarket        # Polymarket prediction-market contracts
+portbench download-data --exchange portfoliobench   # crypto + US stocks + global indices
+portbench download-data --exchange polymarket        # Polymarket prediction-market contracts
 ```
 
-This downloads feather files into the freqtrade data directory (`user_data/data/portfoliobench/` or `user_data/data/polymarket/`).
+This downloads feather files into the data directory (`user_data/data/portfoliobench/` or `user_data/data/polymarket/`).
 
 Alternatively, generate synthetic data for testing without downloading:
 
@@ -41,7 +41,7 @@ python utils/generate_test_data.py
 ### 1. Backtest a Trading Strategy
 
 ```bash
-freqtrade backtesting \
+portbench backtesting \
     --strategy EmaCrossStrategy \
     --strategy-path ./strategy \
     --timeframe 4h \
@@ -52,7 +52,7 @@ freqtrade backtesting \
 ### 2. Backtest a Portfolio Algorithm
 
 ```bash
-freqtrade backtesting \
+portbench backtesting \
     --strategy ONS_Portfolio \
     --strategy-path ./user_data/strategies \
     --timeframe 5m \
@@ -72,7 +72,7 @@ Runs a 7-step pipeline: load data, generate indicators, compute signals, run ONS
 ### 4. Backtest a Polymarket Strategy
 
 ```bash
-freqtrade backtesting \
+portbench backtesting \
     --strategy PolymarketMomentumStrategy \
     --strategy-path ./strategy \
     --timeframe 5m \
@@ -91,32 +91,32 @@ The benchmark suite tests every layer of the framework: data integrity, alpha fa
 ### Full run (all strategies, all assets, all timeframes)
 
 ```bash
-python benchmark.py
+portbench benchmark
 ```
 
 ### Quick smoke test
 
 ```bash
-python benchmark.py --quick
+portbench benchmark --quick
 ```
 
 ### Only trading strategies or only portfolio strategies
 
 ```bash
-python benchmark.py --trading-only
-python benchmark.py --portfolio-only
+portbench benchmark --trading-only
+portbench benchmark --portfolio-only
 ```
 
 ### Export results to JSON
 
 ```bash
-python benchmark.py --export report.json
+portbench benchmark --export report.json
 ```
 
 ### Advanced benchmark with filters
 
 ```bash
-python benchmark_all.py --timeframes 5m 4h --categories crypto stocks --json-output results.json
+portbench benchmark-all --timeframes 5m 4h --categories crypto stocks --json-output results.json
 ```
 
 ### Benchmark Matrix
@@ -217,7 +217,7 @@ bash utils/backtest_polymarket.bash
 ## Hyperparameter Optimization
 
 ```bash
-freqtrade hyperopt \
+portbench hyperopt \
     --strategy EmaCrossStrategy \
     --strategy-path ./strategy \
     --hyperopt-loss SharpeHyperOptLoss \

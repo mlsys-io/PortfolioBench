@@ -10,7 +10,7 @@ PortfolioBench is a multi-asset portfolio benchmarking framework wrapping freqtr
 - `portfolio/` — Standalone portfolio construction pipeline
 - `dataset/` — Data management (stub)
 - `tests/` — Unit and integration tests (alpha, data integrity, portfolio management)
-- `benchmark.py` / `benchmark_all.py` — Benchmarking scripts
+- `benchmark.py` / `benchmark_all.py` — Benchmarking scripts (also accessible via `portbench benchmark`)
 - `user_data/strategies/` — Portfolio-optimization strategies (ONS, MinVar, InvVol, BestSingleAsset, ExpGradient, MaxSharpe, RiskParity, Polymarket)
 - `user_data/config.json` — Main backtesting config; `user_data/config_polymarket.json` — Polymarket config
 - `user_data/data/usstock/` — OHLCV feather files downloaded from Google Drive (119 instruments × 3 timeframes = 357 files)
@@ -20,10 +20,10 @@ PortfolioBench is a multi-asset portfolio benchmarking framework wrapping freqtr
 
 ```bash
 # Backtest a trading strategy
-freqtrade backtesting --strategy EmaCrossStrategy --strategy-path ./strategy --timeframe 4h --timerange 20250101-20250601 --pairs BTC/USDT ETH/USDT
+portbench backtesting --strategy EmaCrossStrategy --strategy-path ./strategy --timeframe 4h --timerange 20250101-20250601 --pairs BTC/USDT ETH/USDT
 
 # Backtest a portfolio strategy
-freqtrade backtesting --strategy ONS_Portfolio --strategy-path ./user_data/strategies --timeframe 5m --timerange 20260101-20260108 --pairs BTC/USDT ETH/USDT AAPL/USD --dry-run-wallet 1000000
+portbench backtesting --strategy ONS_Portfolio --strategy-path ./user_data/strategies --timeframe 5m --timerange 20260101-20260108 --pairs BTC/USDT ETH/USDT AAPL/USD --dry-run-wallet 1000000
 
 # Run standalone portfolio pipeline
 python -m portfolio.PortfolioManagement
@@ -49,7 +49,7 @@ Place feather files in `user_data/data/usstock/`:
 To download the pre-built dataset from Google Drive, run:
 ```bash
 pip install gdown
-freqtrade download-data --exchange portfoliobench
+portbench download-data --exchange portfoliobench
 ```
 
 The `Portfoliobench` exchange subclass auto-injects synthetic market entries for any pair not found on the real exchange.

@@ -48,7 +48,7 @@ except ImportError as e:
 # ============================================================================
 
 CONFIG_PATH = os.path.join(PROJECT_ROOT, "user_data", "config.json")
-DATA_DIR = os.path.join(PROJECT_ROOT, "user_data", "data", "binance")
+DATA_DIR = os.path.join(PROJECT_ROOT, "user_data", "data", "usstock")
 
 # Trading strategies (from strategy/)
 TRADING_STRATEGIES = [
