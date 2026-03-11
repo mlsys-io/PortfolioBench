@@ -43,7 +43,7 @@ class adaptive_trend(IStrategy):
     INTERFACE_VERSION: int = 3
 
     # Paper uses 6-hour candles. (H6)
-    timeframe = "6h"
+    timeframe = "4h"
     can_short = False
 
     # Let custom_stoploss manage exits. Keep a hard stop as safety.
@@ -67,7 +67,7 @@ class adaptive_trend(IStrategy):
     mom_lookback = IntParameter(8, 80, default=24, space="buy")  # 24 * 6h = 6 days
 
     # Entry threshold θ_entry
-    theta_entry = DecimalParameter(0.002, 0.08, decimals=3, default=0.05, space="buy")
+    theta_entry = DecimalParameter(0.002, 0.08, decimals=3, default=0.010, space="buy")
 
     # ATR period k and multiplier α for trailing stop
     atr_period = IntParameter(7, 40, default=14, space="sell")
