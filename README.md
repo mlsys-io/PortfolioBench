@@ -31,7 +31,7 @@ This downloads feather files into the data directory (`user_data/data/portfoliob
 Alternatively, generate synthetic data for testing without downloading:
 
 ```bash
-python utils/generate_test_data.py
+portbench generate-data
 ```
 
 ---
@@ -64,10 +64,16 @@ portbench backtesting \
 ### 3. Run the Standalone Portfolio Pipeline
 
 ```bash
-python -m portfolio.PortfolioManagement
+portbench portfolio
 ```
 
 Runs a 7-step pipeline: load data, generate indicators, compute signals, run ONS, set equal-weight, blend strategies, and backtest. Defaults to a 34% equal-weight + 33% ONS + 33% EMA blend on BTC, ETH, SOL, XRP, and MSFT.
+
+You can customize with CLI flags:
+
+```bash
+portbench portfolio --pairs BTC/USDT ETH/USDT AAPL/USD --timeframe 4h --initial-capital 50000
+```
 
 ### 4. Backtest a Polymarket Strategy
 

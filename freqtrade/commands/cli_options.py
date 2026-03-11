@@ -890,4 +890,16 @@ AVAILABLE_CLI_OPTIONS = {
         help="Write detailed results to a JSON file.",
         metavar="PATH",
     ),
+    # ── PortfolioBench portfolio / generate-data options ──────────────
+    "datadir_portfolio": Arg(
+        "--data-dir",
+        help="Path to the OHLCV data directory (default: user_data/data/usstock).",
+        metavar="PATH",
+    ),
+    "initial_capital": Arg(
+        "--initial-capital",
+        help="Starting capital for the portfolio backtest (default: 10000).",
+        type=float,
+        default=10_000.0,
+    ),
 }

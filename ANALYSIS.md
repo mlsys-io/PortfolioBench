@@ -375,8 +375,7 @@ portbench backtesting \
 ### 9.2 Running the Standalone Portfolio Pipeline
 
 ```bash
-cd /path/to/PortfolioBench
-python -m portfolio.PortfolioManagement
+portbench portfolio
 ```
 
 This runs the full 7-step pipeline with default parameters:

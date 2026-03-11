@@ -203,6 +203,15 @@ ARGS_BENCHMARK_ALL = [
     "json_output",
 ]
 
+ARGS_PORTFOLIO = [
+    "pairs",
+    "timeframe",
+    "datadir_portfolio",
+    "initial_capital",
+]
+
+ARGS_GENERATE_DATA: list[str] = []
+
 ARGS_PLOT_DATAFRAME = [
     "pairs",
     "indicators1",
@@ -302,6 +311,7 @@ NO_CONF_REQURIED = [
     "convert-data",
     "convert-trade-data",
     "download-data",
+    "generate-data",
     "hyperopt-list",
     "hyperopt-show",
     "list-data",
@@ -313,6 +323,7 @@ NO_CONF_REQURIED = [
     "list-timeframes",
     "plot-dataframe",
     "plot-profit",
+    "portfolio",
     "show-trades",
     "install-ui",
     "strategy-updater",
@@ -407,6 +418,8 @@ class Arguments:
             start_backtesting_show,
             start_benchmark,
             start_benchmark_all,
+            start_generate_data,
+            start_portfolio,
             start_convert_data,
             start_convert_db,
             start_convert_trades,
@@ -755,3 +768,21 @@ class Arguments:
         )
         benchmark_all_cmd.set_defaults(func=start_benchmark_all)
         self._build_args(optionlist=ARGS_BENCHMARK_ALL, parser=benchmark_all_cmd)
+
+        # Add portfolio subcommand (PortfolioBench — standalone pipeline)
+        portfolio_cmd = subparsers.add_parser(
+            "portfolio",
+            help="Run the standalone portfolio construction pipeline.",
+            parents=[_common_parser],
+        )
+        portfolio_cmd.set_defaults(func=start_portfolio)
+        self._build_args(optionlist=ARGS_PORTFOLIO, parser=portfolio_cmd)
+
+        # Add generate-data subcommand (PortfolioBench — synthetic test data)
+        generate_data_cmd = subparsers.add_parser(
+            "generate-data",
+            help="Generate synthetic OHLCV test data for all 119 instruments.",
+            parents=[_common_parser],
+        )
+        generate_data_cmd.set_defaults(func=start_generate_data)
+        self._build_args(optionlist=ARGS_GENERATE_DATA, parser=generate_data_cmd)

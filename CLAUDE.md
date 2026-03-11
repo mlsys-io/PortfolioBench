@@ -26,7 +26,10 @@ portbench backtesting --strategy EmaCrossStrategy --strategy-path ./strategy --t
 portbench backtesting --strategy ONS_Portfolio --strategy-path ./user_data/strategies --timeframe 5m --timerange 20260101-20260108 --pairs BTC/USDT ETH/USDT AAPL/USD --dry-run-wallet 1000000
 
 # Run standalone portfolio pipeline
-python -m portfolio.PortfolioManagement
+portbench portfolio
+
+# Generate synthetic test data
+portbench generate-data
 
 # Run full test suite
 bash utils/backtest_tests.bash
