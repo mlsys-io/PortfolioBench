@@ -28,7 +28,7 @@ def _feather_available():
     return not header.startswith(b"version ")
 
 
-@pytest.mark.skipif(not _feather_available(), reason="Data files not available (run: bash utils/download_data.sh)")
+@pytest.mark.skipif(not _feather_available(), reason="Data files not available (run: freqtrade download-data --exchange portfoliobench)")
 class TestDataIntegrity:
     @pytest.mark.parametrize("filename", SAMPLE_FILES)
     def test_required_columns_present(self, filename):

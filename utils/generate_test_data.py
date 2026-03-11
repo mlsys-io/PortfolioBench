@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Generate synthetic OHLCV feather data files for backtesting.
 
-Run this script when the LFS-tracked feather files are not available
-(e.g., pointer stubs only) to generate realistic synthetic data that
-allows all backtest tests to pass.
+Run this script when the Google Drive feather files have not been downloaded
+to generate realistic synthetic data that allows all backtest tests to pass.
+
+To download real data instead, run:
+    freqtrade download-data --exchange portfoliobench
 
 Generates data in both user_data/data/usstock/ (for direct data loading)
 and user_data/data/portfoliobench/ (for freqtrade backtesting with the

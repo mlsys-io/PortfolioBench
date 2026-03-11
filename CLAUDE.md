@@ -48,7 +48,8 @@ Place feather files in `user_data/data/usstock/`:
 
 To download the pre-built dataset from Google Drive, run:
 ```bash
-bash utils/download_data.sh
+pip install gdown
+freqtrade download-data --exchange portfoliobench
 ```
 
 The `Portfoliobench` exchange subclass auto-injects synthetic market entries for any pair not found on the real exchange.

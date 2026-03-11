@@ -1,1 +1,1 @@
-# Data files are stored on Google Drive (see utils/download_data.sh)
+# Data files are stored on Google Drive (use: freqtrade download-data --exchange portfoliobench)

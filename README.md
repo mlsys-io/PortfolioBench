@@ -18,23 +18,15 @@ PortfolioBench ships with 119 instruments, 16 strategies, 5 alpha factors, and a
 
 ## Data Setup
 
-OHLCV data is hosted on Google Drive. Download it before running backtests:
+OHLCV data is hosted on Google Drive. Use the freqtrade CLI to download it:
 
 ```bash
 pip install gdown
-bash utils/download_data.sh            # downloads both usstock and polymarket data
-bash utils/download_data.sh usstock    # usstock only (crypto + stocks + indices)
-bash utils/download_data.sh polymarket # polymarket only
+freqtrade download-data --exchange portfoliobench   # crypto + US stocks + global indices
+freqtrade download-data --exchange polymarket        # Polymarket prediction-market contracts
 ```
 
-This places feather files in `user_data/data/usstock/` and `user_data/data/polymarket/`.
-
-For freqtrade backtesting (which reads from `user_data/data/portfoliobench/`), copy the files:
-
-```bash
-mkdir -p user_data/data/portfoliobench
-cp user_data/data/usstock/*.feather user_data/data/portfoliobench/
-```
+This downloads feather files into the freqtrade data directory (`user_data/data/portfoliobench/` or `user_data/data/polymarket/`).
 
 Alternatively, generate synthetic data for testing without downloading:
 
