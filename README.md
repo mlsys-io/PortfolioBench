@@ -324,6 +324,9 @@ PortfolioBench/
 ├── portfolio/                 # Standalone portfolio construction pipeline
 ├── benchmark.py               # Benchmarking suite with formatted reports
 ├── benchmark_all.py           # Full benchmark matrix runner
+├── cli.py                     # CLI entry point
+├── generate_report.py         # Report generation utilities
+├── dataset/                   # Data management module (placeholder)
 ├── tests/                     # Unit and integration tests
 ├── user_data/data/usstock/    # 357 OHLCV feather files (download from Google Drive)
 └── utils/                     # Bash helpers for backtesting and data generation
