@@ -97,13 +97,14 @@ Homepage = "https://github.com/mlsys-io/PortfolioBench"
 
 
 [project.scripts]
-portbench = "freqtrade.main:main"
+portbench = "cli:main"
 strategy_test = "utils.test:main"
 
 
 [tool.setuptools]
 include-package-data = true
 zip-safe = false
+py-modules = ["cli"]
 
 [tool.setuptools.packages.find]
 where = [".", "freqtrade"]
