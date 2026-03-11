@@ -4,7 +4,7 @@ from scipy.optimize import minimize
 from freqtrade.strategy import IStrategy
 from freqtrade.persistence import Trade
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 import logging
 
 # Initialize the logger
@@ -207,8 +207,10 @@ class ONS_Portfolio(IStrategy):
         diff = target_size - current_position_value
 
         # logger.info(f"PAIR: {trade.pair} | TARGET: {target_size:.2f} | CURRENT: {current_position_value:.2f} | DIFF: {diff:.2f}")
-        
-        if abs(diff) > 1e-6: 
+
+        # Only rebalance if the difference exceeds 2% of total portfolio value
+        # to avoid excessive micro-adjustments that slow down backtesting
+        if total_wallet > 0 and abs(diff) / total_wallet > 0.02:
             return diff
-        
+
         return None

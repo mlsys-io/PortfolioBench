@@ -6,12 +6,16 @@ config*.json
 *.sqlite-wal
 logfile.txt
 user_data/*
-!user_data/strategies
+!user_data/strategies/
 !user_data/strategy/sample_strategy.py
 !user_data/notebooks
 !user_data/models
 !user_data/freqaimodels
 !user_data/data/
+# Downloaded data (from Google Drive) and synthetic test data — not tracked in git
+user_data/data/usstock/
+user_data/data/polymarket/
+user_data/data/portfoliobench/
 user_data/freqaimodels/*
 user_data/models/*
 user_data/notebooks/*

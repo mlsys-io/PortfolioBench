@@ -8,6 +8,7 @@ Simple portfolio construction script that combines:
   4. Naïve 1/N equal-weight allocation as the baseline
 
 Usage:
+    portbench portfolio                              # via CLI (recommended)
     python -m portfolio.PortfolioManagement          # run from project root (PortfolioBench/)
     python portfolio/PortfolioManagement.py          # or directly
 """
@@ -25,6 +26,10 @@ from scipy.optimize import minimize
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
+# freqtrade lives in a git submodule; add its root so `import freqtrade` resolves.
+_FT_ROOT = os.path.join(PROJECT_ROOT, "freqtrade")
+if os.path.isdir(os.path.join(_FT_ROOT, "freqtrade")) and _FT_ROOT not in sys.path:
+    sys.path.insert(0, _FT_ROOT)
 
 from alpha.SimpleEmaFactors import EmaAlpha  # reuse existing alpha factor
 
@@ -39,7 +44,7 @@ def load_pair_data(data_dir: str, pairs: List[str], timeframe: str = "1d") -> Di
 
     Parameters
     ----------
-    data_dir  : path to the exchange data folder, e.g. "user_data/data/binance"
+    data_dir  : path to the exchange data folder, e.g. "user_data/data/usstock"
     pairs     : list of pair strings like ["BTC/USDT", "ETH/USDT", ...]
     timeframe : candle timeframe suffix used in filenames (default "1d")
 
@@ -206,12 +211,12 @@ def calculate_ons_weights(
 
 
 def _project_simplex_A_norm(q: np.ndarray, A: np.ndarray, n: int) -> np.ndarray:
-    """Solve for the A-norm projection onto the simplex (sum ≈ 0.95)."""
+    """Solve for the A-norm projection onto the simplex (sum = 1.0)."""
     def objective(p):
         diff = q - p
         return diff.T @ A @ diff
 
-    constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 0.95}
+    constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1.0}
     bounds = tuple((0.0, 1.0) for _ in range(n))
     x0 = np.ones(n) / n
     res = minimize(objective, x0, method="SLSQP", bounds=bounds, constraints=constraints, tol=1e-6)
@@ -384,9 +389,11 @@ def run_portfolio(
     """
     # -- defaults --
     if data_dir is None:
-        data_dir = os.path.join(PROJECT_ROOT, "user_data", "data", "binance")
+        data_dir = os.path.join(PROJECT_ROOT, "user_data", "data", "usstock")
     if pairs is None:
-        pairs = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT", "MSFT/USDT"]
+        pairs = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT", "MSFT/USD"]
+    if timeframe is None:
+        timeframe = "1d"
 
     # Step 1: Load raw OHLCV data
     print("=" * 60)
@@ -444,7 +451,7 @@ def run_portfolio(
         w_ons=0.33,     # ~1/3 to ONS adaptive weights
         w_ema=0.33,     # ~1/3 to EMA-cross momentum overlay
     )
-    print(f"  Sample final weights (last bar):")
+    print("  Sample final weights (last bar):")
     last_row = final_weights.iloc[-1]
     for pair in active_pairs:
         print(f"    {pair}: {last_row[pair]:.4f}")

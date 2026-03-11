@@ -1,40 +1,12 @@
-# pragma pylint: disable=missing-docstring, invalid-name, pointless-string-statement
-# flake8: noqa: F401
-# isort: skip_file
-# --- Do not remove these imports ---
-import numpy as np
-import pandas as pd
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from pandas import DataFrame
-from typing import Dict, Optional, Union, Tuple
 
 from freqtrade.strategy import (
     IStrategy,
-    Trade,
-    Order,
-    PairLocks,
-    informative,  # @informative decorator
-    # Hyperopt Parameters
-    BooleanParameter,
-    CategoricalParameter,
-    DecimalParameter,
     IntParameter,
-    RealParameter,
-    # timeframe helpers
-    timeframe_to_minutes,
-    timeframe_to_next_date,
-    timeframe_to_prev_date,
-    # Strategy helper functions
-    merge_informative_pair,
-    stoploss_from_absolute,
-    stoploss_from_open,
-    AnnotationType,
 )
 
-# --------------------------------
-# Add your lib to import here
 import talib.abstract as ta
-from technical import qtpylib
 
 
 class MacdAdxStrategy(IStrategy):
@@ -80,15 +52,15 @@ class MacdAdxStrategy(IStrategy):
     # Strategy parameters
     macdFast = IntParameter(8, 15, default=15, space="buy")
     macdSlow = IntParameter(20, 30, default=26, space="buy")
-    macdSignal = IntParameter(10, 15, default=9, space="buy")
+    macdSignal = IntParameter(7, 15, default=9, space="buy")
     adxPeriod = IntParameter(10, 20, default=15, space="buy")
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         macd = ta.MACD(
-            dataframe, 
-            macd_fast=self.macdFast.value, 
-            macd_slow=self.macdSlow.value,
-            signal_period=self.macdSignal.value
+            dataframe,
+            fastperiod=self.macdFast.value,
+            slowperiod=self.macdSlow.value,
+            signalperiod=self.macdSignal.value
         )
         dataframe["macd"] = macd["macd"]
         dataframe["macdsignal"] = macd["macdsignal"]

@@ -1,11 +1,11 @@
 {
     "$schema": "https://schema.freqtrade.io/schema.json",
-    "max_open_trades": 5,
-    "stake_currency": "USD",
+    "max_open_trades": 8,
+    "stake_currency": "USDT",
     "stake_amount": "unlimited",
     "tradable_balance_ratio": 1,
     "fiat_display_currency": "USD",
-    "timeframe": "5m",
+    "timeframe": "4h",
     "dry_run": true,
     "dry_run_wallet": 10000,
     "fee": 0.0,
@@ -34,21 +34,22 @@
         "order_book_top": 1
     },
     "exchange": {
-        "name": "portfoliobench",
+        "name": "polymarket",
         "key": "",
         "secret": "",
         "ccxt_config": {},
         "ccxt_async_config": {},
         "pair_whitelist": [
-            "BTC/USDT",
-            "ETH/USDT",
-            "SOL/USDT",
-            "XRP/USDT",
-            "MSFT/USD"
+            "TRUMP-WIN-YES/USDT",
+            "ETH-10K-YES/USDT",
+            "FED-RATE-CUT-YES/USDT",
+            "BTC-100K-YES/USDT",
+            "RECESSION-2025-YES/USDT",
+            "AI-REGULATION-YES/USDT",
+            "SPX-6000-YES/USDT",
+            "SOL-500-YES/USDT"
         ],
-        "pair_blacklist": [
-            "BNB/.*"
-        ],
+        "pair_blacklist": [],
         "fee": 0.0
     },
     "pairlists": [
@@ -72,7 +73,7 @@
         "username": "freqtrader",
         "password": "admin"
     },
-    "bot_name": "freqtrade",
+    "bot_name": "polymarket_bot",
     "initial_state": "running",
     "force_entry_enable": false,
     "internals": {

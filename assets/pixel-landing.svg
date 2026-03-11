@@ -1,0 +1,245 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420">
+  <defs>
+    <style>
+      .p { shape-rendering: crispEdges; }
+      @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
+      @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+      .blink { animation: blink 1.8s infinite; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="960" height="420" fill="#0d1117"/>
+
+  <!-- Subtle grid -->
+  <g opacity="0.12">
+    <line x1="0" y1="60" x2="960" y2="60" stroke="#30363d" stroke-width="1"/>
+    <line x1="0" y1="120" x2="960" y2="120" stroke="#30363d" stroke-width="1"/>
+    <line x1="0" y1="180" x2="960" y2="180" stroke="#30363d" stroke-width="1"/>
+    <line x1="0" y1="240" x2="960" y2="240" stroke="#30363d" stroke-width="1"/>
+    <line x1="0" y1="300" x2="960" y2="300" stroke="#30363d" stroke-width="1"/>
+    <line x1="0" y1="360" x2="960" y2="360" stroke="#30363d" stroke-width="1"/>
+  </g>
+
+  <!-- ===== LARGE PIXEL BAR CHART (left side, full height) ===== -->
+  <g class="p">
+    <!-- Bar 1 -->
+    <rect x="30" y="300" width="28" height="80" fill="#1a6b3c"/>
+    <rect x="30" y="294" width="28" height="6" fill="#3fb950"/>
+    <!-- Bar 2 -->
+    <rect x="68" y="260" width="28" height="120" fill="#1a6b3c"/>
+    <rect x="68" y="254" width="28" height="6" fill="#3fb950"/>
+    <!-- Bar 3 -->
+    <rect x="106" y="280" width="28" height="100" fill="#8b3a3a"/>
+    <rect x="106" y="274" width="28" height="6" fill="#e05252"/>
+    <!-- Bar 4 -->
+    <rect x="144" y="220" width="28" height="160" fill="#1a6b3c"/>
+    <rect x="144" y="214" width="28" height="6" fill="#3fb950"/>
+    <!-- Bar 5 -->
+    <rect x="182" y="190" width="28" height="190" fill="#1a6b3c"/>
+    <rect x="182" y="184" width="28" height="6" fill="#3fb950"/>
+    <!-- Bar 6 -->
+    <rect x="220" y="230" width="28" height="150" fill="#8b3a3a"/>
+    <rect x="220" y="224" width="28" height="6" fill="#e05252"/>
+    <!-- Bar 7 -->
+    <rect x="258" y="160" width="28" height="220" fill="#1a6b3c"/>
+    <rect x="258" y="154" width="28" height="6" fill="#3fb950"/>
+    <!-- Bar 8 -->
+    <rect x="296" y="130" width="28" height="250" fill="#1a6b3c"/>
+    <rect x="296" y="124" width="28" height="6" fill="#3fb950"/>
+    <!-- Bar 9 -->
+    <rect x="334" y="100" width="28" height="280" fill="#1a6b3c"/>
+    <rect x="334" y="94" width="28" height="6" fill="#3fb950"/>
+    <!-- Bar 10 -->
+    <rect x="372" y="120" width="28" height="260" fill="#8b3a3a"/>
+    <rect x="372" y="114" width="28" height="6" fill="#e05252"/>
+    <!-- Bar 11 -->
+    <rect x="410" y="80" width="28" height="300" fill="#1a6b3c"/>
+    <rect x="410" y="74" width="28" height="6" fill="#3fb950"/>
+  </g>
+
+  <!-- Trend line over bars -->
+  <g stroke="#58a6ff" stroke-width="3" opacity="0.7" fill="none">
+    <polyline points="44,292 82,252 120,272 158,212 196,182 234,222 272,152 310,122 348,92 386,112 424,72"/>
+  </g>
+  <!-- Trend dots -->
+  <g class="p" fill="#58a6ff">
+    <rect x="40" y="288" width="8" height="8"/>
+    <rect x="78" y="248" width="8" height="8"/>
+    <rect x="116" y="268" width="8" height="8"/>
+    <rect x="154" y="208" width="8" height="8"/>
+    <rect x="192" y="178" width="8" height="8"/>
+    <rect x="230" y="218" width="8" height="8"/>
+    <rect x="268" y="148" width="8" height="8"/>
+    <rect x="306" y="118" width="8" height="8"/>
+    <rect x="344" y="88" width="8" height="8"/>
+    <rect x="382" y="108" width="8" height="8"/>
+    <rect x="420" y="68" width="8" height="8"/>
+  </g>
+
+  <!-- ===== LARGE PIXEL COIN (top-left) ===== -->
+  <g class="p" transform="translate(30, 24) scale(2)">
+    <rect x="8" y="0" width="16" height="4" fill="#f0b832"/>
+    <rect x="4" y="4" width="24" height="4" fill="#f0b832"/>
+    <rect x="0" y="8" width="32" height="16" fill="#f0b832"/>
+    <rect x="4" y="24" width="24" height="4" fill="#f0b832"/>
+    <rect x="8" y="28" width="16" height="4" fill="#f0b832"/>
+    <rect x="14" y="6" width="4" height="4" fill="#0d1117"/>
+    <rect x="10" y="10" width="12" height="4" fill="#0d1117"/>
+    <rect x="10" y="14" width="4" height="4" fill="#0d1117"/>
+    <rect x="10" y="18" width="12" height="4" fill="#0d1117"/>
+    <rect x="18" y="18" width="4" height="4" fill="#0d1117"/>
+    <rect x="14" y="22" width="4" height="4" fill="#0d1117"/>
+  </g>
+
+  <!-- ===== LARGE PIXEL PIE CHART (upper-right area) ===== -->
+  <g class="p" transform="translate(850, 24) scale(2.5)">
+    <rect x="8" y="0" width="16" height="4" fill="#58a6ff"/>
+    <rect x="4" y="4" width="12" height="4" fill="#58a6ff"/>
+    <rect x="16" y="4" width="12" height="4" fill="#bc8cff"/>
+    <rect x="0" y="8" width="16" height="8" fill="#58a6ff"/>
+    <rect x="16" y="8" width="16" height="8" fill="#bc8cff"/>
+    <rect x="0" y="16" width="16" height="8" fill="#3fb950"/>
+    <rect x="16" y="16" width="16" height="8" fill="#f0b832"/>
+    <rect x="4" y="24" width="12" height="4" fill="#3fb950"/>
+    <rect x="16" y="24" width="12" height="4" fill="#f0b832"/>
+    <rect x="8" y="28" width="16" height="4" fill="#f0b832"/>
+  </g>
+
+  <!-- ===== PIXEL ROCKET (right side, going up) ===== -->
+  <g class="p" transform="translate(880, 160)">
+    <!-- flame -->
+    <rect x="12" y="64" width="8" height="8" fill="#e05252"/>
+    <rect x="8" y="72" width="16" height="8" fill="#f0b832"/>
+    <rect x="12" y="80" width="8" height="8" fill="#f0b832" opacity="0.6"/>
+    <!-- body -->
+    <rect x="12" y="8" width="8" height="8" fill="#e6edf3"/>
+    <rect x="8" y="16" width="16" height="40" fill="#c9d1d9"/>
+    <rect x="8" y="16" width="16" height="8" fill="#e6edf3"/>
+    <!-- nose -->
+    <rect x="14" y="0" width="4" height="8" fill="#58a6ff"/>
+    <!-- window -->
+    <rect x="12" y="28" width="8" height="8" fill="#58a6ff"/>
+    <!-- fins -->
+    <rect x="0" y="48" width="8" height="16" fill="#e05252"/>
+    <rect x="24" y="48" width="8" height="16" fill="#e05252"/>
+  </g>
+
+  <!-- ===== PIXEL DIAMOND (decorative, mid-right) ===== -->
+  <g class="p" transform="translate(820, 310)">
+    <rect x="16" y="0" width="8" height="8" fill="#58a6ff"/>
+    <rect x="8" y="8" width="24" height="8" fill="#79c0ff"/>
+    <rect x="0" y="16" width="40" height="8" fill="#58a6ff"/>
+    <rect x="8" y="24" width="24" height="8" fill="#388bfd"/>
+    <rect x="16" y="32" width="8" height="8" fill="#1f6feb"/>
+  </g>
+
+  <!-- ===== PIXEL STARS scattered ===== -->
+  <g class="p" fill="#f0b832" opacity="0.7">
+    <!-- star 1 -->
+    <rect x="470" y="40" width="4" height="4"/>
+    <rect x="466" y="44" width="12" height="4"/>
+    <rect x="470" y="48" width="4" height="4"/>
+    <!-- star 2 -->
+    <rect x="760" y="140" width="4" height="4"/>
+    <rect x="756" y="144" width="12" height="4"/>
+    <rect x="760" y="148" width="4" height="4"/>
+    <!-- star 3 -->
+    <rect x="700" y="280" width="4" height="4"/>
+    <rect x="696" y="284" width="12" height="4"/>
+    <rect x="700" y="288" width="4" height="4"/>
+  </g>
+  <g class="p blink" fill="#e6edf3" opacity="0.5">
+    <rect x="550" y="80" width="4" height="4"/>
+    <rect x="546" y="84" width="12" height="4"/>
+    <rect x="550" y="88" width="4" height="4"/>
+  </g>
+  <g class="p" fill="#bc8cff" opacity="0.5">
+    <rect x="640" y="50" width="4" height="4"/>
+    <rect x="636" y="54" width="12" height="4"/>
+    <rect x="640" y="58" width="4" height="4"/>
+  </g>
+
+  <!-- ===== PIXEL ARROW UP (growth indicator) ===== -->
+  <g class="p" transform="translate(460, 280)">
+    <rect x="20" y="0" width="8" height="8" fill="#3fb950"/>
+    <rect x="12" y="8" width="24" height="8" fill="#3fb950"/>
+    <rect x="4" y="16" width="40" height="8" fill="#3fb950"/>
+    <rect x="16" y="24" width="16" height="24" fill="#3fb950"/>
+  </g>
+
+  <!-- ===== PIXEL LOCK (security) ===== -->
+  <g class="p" transform="translate(770, 200)">
+    <rect x="8" y="0" width="16" height="4" fill="#f0b832"/>
+    <rect x="4" y="4" width="4" height="12" fill="#f0b832"/>
+    <rect x="24" y="4" width="4" height="12" fill="#f0b832"/>
+    <rect x="0" y="16" width="32" height="24" fill="#f0b832"/>
+    <rect x="12" y="24" width="8" height="8" fill="#0d1117"/>
+  </g>
+
+  <!-- ===== PIXEL CHART LINE (secondary, bottom-right) ===== -->
+  <g class="p" opacity="0.4">
+    <rect x="460" y="360" width="4" height="4" fill="#bc8cff"/>
+    <rect x="490" y="340" width="4" height="4" fill="#bc8cff"/>
+    <rect x="520" y="350" width="4" height="4" fill="#bc8cff"/>
+    <rect x="550" y="320" width="4" height="4" fill="#bc8cff"/>
+    <rect x="580" y="330" width="4" height="4" fill="#bc8cff"/>
+    <rect x="610" y="310" width="4" height="4" fill="#bc8cff"/>
+    <rect x="640" y="300" width="4" height="4" fill="#bc8cff"/>
+    <rect x="670" y="290" width="4" height="4" fill="#bc8cff"/>
+  </g>
+  <g stroke="#bc8cff" stroke-width="2" opacity="0.25" fill="none">
+    <polyline points="462,362 492,342 522,352 552,322 582,332 612,312 642,302 672,292"/>
+  </g>
+
+  <!-- ===== TITLE (large, centered right) ===== -->
+  <text x="480" y="170" font-family="'Courier New', monospace" font-size="72" font-weight="bold" fill="#e6edf3" letter-spacing="3" text-anchor="middle">
+    Portfolio
+  </text>
+  <text x="480" y="240" font-family="'Courier New', monospace" font-size="72" font-weight="bold" fill="#58a6ff" letter-spacing="3" text-anchor="middle">
+    Bench
+  </text>
+
+  <!-- ===== 4 ASSET CLASS PIXEL ICONS (bottom row) ===== -->
+  <!-- BTC icon -->
+  <g class="p" transform="translate(470, 330)">
+    <rect x="4" y="0" width="16" height="4" fill="#f0b832"/>
+    <rect x="0" y="4" width="24" height="16" fill="#f0b832"/>
+    <rect x="4" y="20" width="16" height="4" fill="#f0b832"/>
+    <rect x="8" y="6" width="8" height="4" fill="#0d1117"/>
+    <rect x="8" y="12" width="8" height="4" fill="#0d1117"/>
+  </g>
+  <!-- Stock chart icon -->
+  <g class="p" transform="translate(510, 330)">
+    <rect x="0" y="16" width="24" height="8" fill="#3fb950"/>
+    <rect x="0" y="12" width="8" height="4" fill="#3fb950"/>
+    <rect x="8" y="4" width="8" height="8" fill="#3fb950"/>
+    <rect x="16" y="0" width="8" height="12" fill="#3fb950"/>
+  </g>
+  <!-- Globe icon -->
+  <g class="p" transform="translate(550, 330)">
+    <rect x="4" y="0" width="16" height="4" fill="#bc8cff"/>
+    <rect x="0" y="4" width="24" height="16" fill="#bc8cff"/>
+    <rect x="4" y="20" width="16" height="4" fill="#bc8cff"/>
+    <rect x="10" y="2" width="4" height="20" fill="#7a5faa"/>
+    <rect x="2" y="10" width="20" height="4" fill="#7a5faa"/>
+  </g>
+  <!-- Prediction icon (dice) -->
+  <g class="p" transform="translate(590, 330)">
+    <rect x="0" y="0" width="24" height="24" fill="#f0b832"/>
+    <rect x="4" y="4" width="4" height="4" fill="#0d1117"/>
+    <rect x="16" y="4" width="4" height="4" fill="#0d1117"/>
+    <rect x="10" y="10" width="4" height="4" fill="#0d1117"/>
+    <rect x="4" y="16" width="4" height="4" fill="#0d1117"/>
+    <rect x="16" y="16" width="4" height="4" fill="#0d1117"/>
+  </g>
+
+  <!-- Blinking cursor -->
+  <rect x="920" y="390" width="16" height="20" fill="#58a6ff" class="blink p"/>
+
+  <!-- Bottom pixel border -->
+  <g class="p" opacity="0.2">
+    <rect x="0" y="408" width="960" height="4" fill="#58a6ff"/>
+    <rect x="0" y="412" width="960" height="8" fill="#1a3a6b"/>
+  </g>
+</svg>
