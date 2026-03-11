@@ -6,7 +6,7 @@ Usage::
     portbench workflow path/to/workflow.json --output-json results.json
 
 The workflow JSON follows the ``lumid/v1`` API version with
-``kind: PortbenchWorkflow``.  The runner resolves stage dependencies,
+``kind: Workflow``.  The runner resolves stage dependencies,
 executes each pipeline step (alpha -> strategy -> portfolio) via the
 :class:`LocalWorkflowRunner` from LumidStack, then backtests the
 resulting portfolio weights using PortfolioBench's backtest engine.
@@ -82,26 +82,35 @@ def run_workflow_cli(
     register_all_handlers(runner)
 
     wf_name = runner.workflow.metadata.name or path.stem
-    bt_cfg = runner.backtest_config
+
+    # Parse backtest config from the extra spec (domain-specific fields
+    # stored alongside stages in the workflow JSON).
+    extra = runner.extra_spec
+    bt_cfg = extra.get("backtest", {})
+    bt_pairs = bt_cfg.get("pairs", [])
+    bt_timeframe = bt_cfg.get("timeframe", "1d")
+    bt_capital = float(bt_cfg.get("initial_capital", 10_000))
+    bt_data_dir = bt_cfg.get("data_dir")
+
     print(f"  Workflow name : {wf_name}")
-    print(f"  Pairs         : {bt_cfg.pairs}")
-    print(f"  Timeframe     : {bt_cfg.timeframe}")
-    print(f"  Capital       : ${bt_cfg.initial_capital:,.2f}")
+    print(f"  Pairs         : {bt_pairs}")
+    print(f"  Timeframe     : {bt_timeframe}")
+    print(f"  Capital       : ${bt_capital:,.2f}")
     print()
 
     # ── 2. Load data into context ──────────────────────────────────────
-    data_dir = bt_cfg.data_dir
+    data_dir = bt_data_dir
     if data_dir is None:
         data_dir = os.path.join(_PROJECT_ROOT, "user_data", "data", "usstock")
 
-    pairs = bt_cfg.pairs
+    pairs = bt_pairs
     if not pairs:
         pairs = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT", "MSFT/USD"]
 
     print("=" * 60)
     print("STEP 0 — Loading market data")
     print("=" * 60)
-    pair_data = load_pair_data(data_dir, pairs, bt_cfg.timeframe)
+    pair_data = load_pair_data(data_dir, pairs, bt_timeframe)
     if not pair_data:
         raise RuntimeError(
             "No data loaded — check data_dir and pairs in the workflow backtest section."
@@ -134,7 +143,7 @@ def run_workflow_cli(
     print("BACKTESTING — PortfolioBench")
     print("=" * 60)
 
-    result_df = backtest_portfolio(prices, weights, bt_cfg.initial_capital)
+    result_df = backtest_portfolio(prices, weights, bt_capital)
     metrics = compute_metrics(result_df)
 
     print(f"\n{'=' * 60}")
@@ -144,7 +153,7 @@ def run_workflow_cli(
     print(f"  Alpha             : {context.get('alpha_type', 'n/a')}")
     print(f"  Strategy          : {context.get('strategy_type', 'n/a')}")
     print(f"  Portfolio         : {context.get('portfolio_type', 'n/a')}")
-    print(f"  Initial capital   : ${bt_cfg.initial_capital:,.2f}")
+    print(f"  Initial capital   : ${bt_capital:,.2f}")
     print(f"  Final value       : ${result_df['portfolio_value'].iloc[-1]:,.2f}")
     print(f"  Total return      : {metrics['total_return_pct']:.2f}%")
     print(f"  Annualised return : {metrics['annualised_return_pct']:.2f}%")
@@ -160,8 +169,8 @@ def run_workflow_cli(
         "strategy_type": context.get("strategy_type"),
         "portfolio_type": context.get("portfolio_type"),
         "pairs": pairs,
-        "timeframe": bt_cfg.timeframe,
-        "initial_capital": bt_cfg.initial_capital,
+        "timeframe": bt_timeframe,
+        "initial_capital": bt_capital,
         "metrics": metrics,
         "stage_durations": {
             name: round(sr.duration_s, 4) for name, sr in wf_result.stages.items()

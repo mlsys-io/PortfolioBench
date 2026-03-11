@@ -254,6 +254,6 @@ def handle_portfolio(stage_name: str, params: dict[str, Any], context: dict[str,
 
 def register_all_handlers(runner) -> None:
     """Register the alpha, strategy, and portfolio handlers on *runner*."""
-    runner.register_handler("alpha", handle_alpha)
-    runner.register_handler("strategy", handle_strategy)
-    runner.register_handler("portfolio", handle_portfolio)
+    runner.register_handler("portbench.alpha", handle_alpha)
+    runner.register_handler("portbench.strategy", handle_strategy)
+    runner.register_handler("portbench.portfolio", handle_portfolio)

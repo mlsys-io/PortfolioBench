@@ -1,6 +1,6 @@
 {
   "apiVersion": "lumid/v1",
-  "kind": "PortbenchWorkflow",
+  "kind": "Workflow",
   "metadata": {
     "name": "bollinger-blend",
     "annotations": {
@@ -10,20 +10,20 @@
   "spec": {
     "stages": {
       "alpha": {
-        "taskType": "alpha",
+        "template": "portbench.alpha",
         "params": {
           "type": "bollinger"
         }
       },
       "strategy": {
-        "taskType": "strategy",
+        "template": "portbench.strategy",
         "dependsOn": ["alpha"],
         "params": {
           "type": "bollinger"
         }
       },
       "portfolio": {
-        "taskType": "portfolio",
+        "template": "portbench.portfolio",
         "dependsOn": ["strategy"],
         "params": {
           "type": "blend",

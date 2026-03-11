@@ -1,0 +1,6 @@
+{
+  "template": "portbench.alpha",
+  "params": {
+    "type": "rsi"
+  }
+}

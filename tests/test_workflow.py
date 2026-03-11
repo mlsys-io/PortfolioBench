@@ -192,18 +192,18 @@ class TestPortfolioHandler:
 class TestWorkflowEndToEnd:
     WORKFLOW = {
         "apiVersion": "lumid/v1",
-        "kind": "PortbenchWorkflow",
+        "kind": "Workflow",
         "metadata": {"name": "e2e-test"},
         "spec": {
             "stages": {
-                "alpha": {"taskType": "alpha", "params": {"type": "ema"}},
+                "alpha": {"template": "portbench.alpha", "params": {"type": "ema"}},
                 "strategy": {
-                    "taskType": "strategy",
+                    "template": "portbench.strategy",
                     "dependsOn": ["alpha"],
                     "params": {"type": "ema_cross"},
                 },
                 "portfolio": {
-                    "taskType": "portfolio",
+                    "template": "portbench.portfolio",
                     "dependsOn": ["strategy"],
                     "params": {"type": "blend"},
                 },
@@ -252,18 +252,18 @@ class TestWorkflowEndToEnd:
         for alpha_type, strategy_type in combos:
             wf = {
                 "apiVersion": "lumid/v1",
-                "kind": "PortbenchWorkflow",
+                "kind": "Workflow",
                 "metadata": {"name": f"{alpha_type}-{strategy_type}"},
                 "spec": {
                     "stages": {
-                        "alpha": {"taskType": "alpha", "params": {"type": alpha_type}},
+                        "alpha": {"template": "portbench.alpha", "params": {"type": alpha_type}},
                         "strategy": {
-                            "taskType": "strategy",
+                            "template": "portbench.strategy",
                             "dependsOn": ["alpha"],
                             "params": {"type": strategy_type},
                         },
                         "portfolio": {
-                            "taskType": "portfolio",
+                            "template": "portbench.portfolio",
                             "dependsOn": ["strategy"],
                             "params": {"type": "equal"},
                         },
