@@ -141,7 +141,7 @@ py-modules = ["cli"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["freqtrade*", "dataset*", "portfolio*", "strategy*", "alpha*", "utils*", "workflow*"]
+include = ["freqtrade*", "dataset*", "portfolio*", "strategy*", "alpha*", "utils*", "workflow*", "adapters*"]
 exclude = ["tests", "tests.*", "freqtrade.tests", "freqtrade.tests.*", "user_data", "user_data*"]
 namespaces = false
 
