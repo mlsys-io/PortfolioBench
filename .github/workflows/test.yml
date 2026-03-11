@@ -9,6 +9,7 @@ on:
 env:
   GIT_LFS_SKIP_SMUDGE: "1"
   TALIB_VERSION: "0.6.4"
+  TALIB_CACHE_VERSION: "1"
   PYTHON_VERSION: "3.11"
 
 jobs:
@@ -59,10 +60,19 @@ jobs:
             /usr/lib/libta_lib*
             /usr/include/ta-lib/
             /usr/include/ta_*.h
-          key: talib-${{ env.TALIB_VERSION }}-ubuntu-latest
+          key: talib-${{ env.TALIB_VERSION }}-${{ runner.os }}-v${{ env.TALIB_CACHE_VERSION }}
+
+      - name: Verify TA-Lib cache
+        id: verify-talib
+        run: |
+          if [ -f /usr/lib/libta_lib.so ] || [ -f /usr/lib/libta_lib.a ]; then
+            echo "installed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "installed=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build TA-Lib from source
-        if: steps.cache-talib.outputs.cache-hit != 'true'
+        if: steps.verify-talib.outputs.installed != 'true'
         run: |
           sudo apt-get update && sudo apt-get install -y build-essential wget
           wget https://github.com/ta-lib/ta-lib/releases/download/v${{ env.TALIB_VERSION }}/ta-lib-${{ env.TALIB_VERSION }}-src.tar.gz
@@ -119,10 +129,19 @@ jobs:
             /usr/lib/libta_lib*
             /usr/include/ta-lib/
             /usr/include/ta_*.h
-          key: talib-${{ env.TALIB_VERSION }}-ubuntu-latest
+          key: talib-${{ env.TALIB_VERSION }}-${{ runner.os }}-v${{ env.TALIB_CACHE_VERSION }}
+
+      - name: Verify TA-Lib cache
+        id: verify-talib
+        run: |
+          if [ -f /usr/lib/libta_lib.so ] || [ -f /usr/lib/libta_lib.a ]; then
+            echo "installed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "installed=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build TA-Lib from source
-        if: steps.cache-talib.outputs.cache-hit != 'true'
+        if: steps.verify-talib.outputs.installed != 'true'
         run: |
           sudo apt-get update && sudo apt-get install -y build-essential wget
           wget https://github.com/ta-lib/ta-lib/releases/download/v${{ env.TALIB_VERSION }}/ta-lib-${{ env.TALIB_VERSION }}-src.tar.gz
@@ -246,10 +265,19 @@ jobs:
             /usr/lib/libta_lib*
             /usr/include/ta-lib/
             /usr/include/ta_*.h
-          key: talib-${{ env.TALIB_VERSION }}-ubuntu-latest
+          key: talib-${{ env.TALIB_VERSION }}-${{ runner.os }}-v${{ env.TALIB_CACHE_VERSION }}
+
+      - name: Verify TA-Lib cache
+        id: verify-talib
+        run: |
+          if [ -f /usr/lib/libta_lib.so ] || [ -f /usr/lib/libta_lib.a ]; then
+            echo "installed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "installed=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build TA-Lib from source
-        if: steps.cache-talib.outputs.cache-hit != 'true'
+        if: steps.verify-talib.outputs.installed != 'true'
         run: |
           sudo apt-get update && sudo apt-get install -y build-essential wget
           wget https://github.com/ta-lib/ta-lib/releases/download/v${{ env.TALIB_VERSION }}/ta-lib-${{ env.TALIB_VERSION }}-src.tar.gz
@@ -306,10 +334,19 @@ jobs:
             /usr/lib/libta_lib*
             /usr/include/ta-lib/
             /usr/include/ta_*.h
-          key: talib-${{ env.TALIB_VERSION }}-ubuntu-latest
+          key: talib-${{ env.TALIB_VERSION }}-${{ runner.os }}-v${{ env.TALIB_CACHE_VERSION }}
+
+      - name: Verify TA-Lib cache
+        id: verify-talib
+        run: |
+          if [ -f /usr/lib/libta_lib.so ] || [ -f /usr/lib/libta_lib.a ]; then
+            echo "installed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "installed=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build TA-Lib from source
-        if: steps.cache-talib.outputs.cache-hit != 'true'
+        if: steps.verify-talib.outputs.installed != 'true'
         run: |
           sudo apt-get update && sudo apt-get install -y build-essential wget
           wget https://github.com/ta-lib/ta-lib/releases/download/v${{ env.TALIB_VERSION }}/ta-lib-${{ env.TALIB_VERSION }}-src.tar.gz
