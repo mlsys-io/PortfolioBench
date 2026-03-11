@@ -173,7 +173,7 @@ jobs:
 
       # ── Upload as Pages artifact (for deployment) ──
       - name: Upload Pages artifact
-        if: github.event.inputs.publish != 'false'
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.publish != 'false'
         uses: actions/upload-pages-artifact@v3
         with:
           path: report/
@@ -182,7 +182,7 @@ jobs:
   deploy:
     name: Deploy Report to GitHub Pages
     needs: benchmark
-    if: github.event.inputs.publish != 'false'
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.publish != 'false'
     runs-on: ubuntu-latest
 
     environment:

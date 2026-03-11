@@ -78,9 +78,9 @@ PORTFOLIO_STRATEGIES = [
 # Asset universes
 ASSET_UNIVERSES = {
     "crypto":  ["BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT"],
-    "stocks":  ["AAPL/USDT", "MSFT/USDT", "NVDA/USDT", "GOOG/USDT"],
-    "indices": ["DJI/USDT", "FTSE/USDT", "GSPC/USDT"],
-    "mixed":   ["BTC/USDT", "ETH/USDT", "AAPL/USDT", "MSFT/USDT", "DJI/USDT", "GSPC/USDT"],
+    "stocks":  ["AAPL/USD", "MSFT/USD", "NVDA/USD", "GOOG/USD"],
+    "indices": ["DJI/USD", "FTSE/USD", "GSPC/USD"],
+    "mixed":   ["BTC/USDT", "ETH/USDT", "AAPL/USD", "MSFT/USD", "DJI/USD", "GSPC/USD"],
 }
 
 # Timeframes with appropriate date ranges
