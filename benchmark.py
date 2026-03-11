@@ -20,6 +20,7 @@ import json
 import time
 import traceback
 import argparse
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -640,6 +641,7 @@ def run_benchmark(
     include_portfolio: bool = True,
     quick: bool = False,
     export_path: Optional[str] = None,
+    max_workers: int = 1,
 ) -> Dict[str, Any]:
     """
     Execute the full benchmark suite and print a formatted report.
@@ -677,6 +679,8 @@ def run_benchmark(
         strat_count += len(portfolio_strats)
     test_combos = strat_count * len(asset_configs) * len(tf_configs)
     print(f"  {_c('Matrix:', Colors.DIM)}  {strat_count} strategies × {len(asset_configs)} asset classes × {len(tf_configs)} timeframes = {test_combos} backtests")
+    if max_workers > 1:
+        print(f"  {_c('Workers:', Colors.DIM)}  {max_workers} parallel processes")
     print(f"  {_c('Plus:', Colors.DIM)}    data integrity + alpha smoke test + portfolio pipeline")
 
     # ==================== 1. DATA INTEGRITY ====================
@@ -746,6 +750,7 @@ def run_benchmark(
             tf_configs=tf_configs,
             result_list=all_results["trading_backtests"],
             counters={"pass": 0, "fail": 0, "skip": 0},
+            max_workers=max_workers,
         )
         for r in all_results["trading_backtests"]:
             if r["status"] == "pass":
@@ -765,6 +770,7 @@ def run_benchmark(
             tf_configs=tf_configs,
             result_list=all_results["portfolio_backtests"],
             counters={"pass": 0, "fail": 0, "skip": 0},
+            max_workers=max_workers,
         )
         for r in all_results["portfolio_backtests"]:
             if r["status"] == "pass":
@@ -801,44 +807,100 @@ def _run_strategy_suite(
     tf_configs: Dict[str, Dict],
     result_list: List[Dict],
     counters: Dict[str, int],
+    max_workers: int = 1,
 ):
-    """Run all strategy × asset × timeframe combinations and print results."""
+    """Run all strategy × asset × timeframe combinations and print results.
+
+    When *max_workers* > 1 the backtests are dispatched to a process pool so
+    that independent strategy/asset/timeframe combos execute concurrently.
+    """
+    # Build the full list of tasks so we can dispatch them all at once.
+    tasks: List[Tuple[str, str, str, List[str], str, str]] = []
     for strat in strat_names:
-        print(subsection(f"Strategy: {strat}"))
         for asset_label, pairs in asset_configs.items():
             for tf, tf_cfg in tf_configs.items():
-                tag = f"{asset_label}/{tf}"
-                r = run_single_backtest(
+                tasks.append((strat, strat_path, asset_label, pairs, tf, tf_cfg["timerange"]))
+
+    # --- parallel execution ------------------------------------------------
+    if max_workers > 1 and len(tasks) > 1:
+        results_by_key: Dict[Tuple[str, str, str], Dict] = {}
+        with ProcessPoolExecutor(max_workers=max_workers) as pool:
+            future_to_key = {}
+            for strat, sp, asset_label, pairs, tf, timerange in tasks:
+                fut = pool.submit(
+                    run_single_backtest,
                     strategy_name=strat,
-                    strategy_path=strat_path,
+                    strategy_path=sp,
                     pairs=pairs,
                     timeframe=tf,
-                    timerange=tf_cfg["timerange"],
+                    timerange=timerange,
                 )
-                r["asset_class"] = asset_label
-                result_list.append(r)
+                future_to_key[fut] = (strat, asset_label, tf)
 
-                if r["status"] == "pass":
-                    counters["pass"] += 1
-                    m = r.get("metrics", {})
-                    ret_str = format_pct(m.get("total_return_pct"))
-                    sharpe_str = format_sharpe(m.get("sharpe"))
-                    trades_str = str(m.get("trades", "?"))
-                    dd_str = format_pct(m.get("max_drawdown_pct"))
-                    win_str = format_pct(m.get("win_rate_pct"))
-                    dur_str = format_duration(r["duration_s"])
-                    print(detail(
-                        f"[{status_pass()}] {tag}",
-                        f"return={ret_str}  sharpe={sharpe_str}  "
-                        f"DD={dd_str}  win={win_str}  trades={trades_str}  {dur_str}",
-                    ))
-                elif r["status"] == "fail":
-                    counters["fail"] += 1
-                    err = (r.get("error") or "")[:60]
-                    print(detail(f"[{status_fail()}] {tag}", f"{err}  {format_duration(r['duration_s'])}"))
-                else:
-                    counters["skip"] += 1
-                    print(detail(f"[{status_skip()}] {tag}", r.get("error", "")[:60]))
+            for fut in as_completed(future_to_key):
+                key = future_to_key[fut]
+                try:
+                    r = fut.result()
+                except Exception as exc:
+                    r = {
+                        "strategy": key[0],
+                        "pairs": [],
+                        "timeframe": key[2],
+                        "timerange": "",
+                        "status": "fail",
+                        "error": str(exc),
+                        "metrics": {},
+                        "duration_s": 0.0,
+                    }
+                r["asset_class"] = key[1]
+                results_by_key[key] = r
+
+        # Print results in the original deterministic order.
+        for strat, _sp, asset_label, _pairs, tf, _tr in tasks:
+            r = results_by_key[(strat, asset_label, tf)]
+            result_list.append(r)
+    else:
+        # --- sequential fallback (max_workers=1) ---------------------------
+        for strat, sp, asset_label, pairs, tf, timerange in tasks:
+            r = run_single_backtest(
+                strategy_name=strat,
+                strategy_path=sp,
+                pairs=pairs,
+                timeframe=tf,
+                timerange=timerange,
+            )
+            r["asset_class"] = asset_label
+            result_list.append(r)
+
+    # --- print results & update counters (always in deterministic order) ---
+    cur_strat = None
+    for r in result_list[len(result_list) - len(tasks):]:
+        if r["strategy"] != cur_strat:
+            cur_strat = r["strategy"]
+            print(subsection(f"Strategy: {cur_strat}"))
+
+        tag = f"{r['asset_class']}/{r['timeframe']}"
+        if r["status"] == "pass":
+            counters["pass"] += 1
+            m = r.get("metrics", {})
+            ret_str = format_pct(m.get("total_return_pct"))
+            sharpe_str = format_sharpe(m.get("sharpe"))
+            trades_str = str(m.get("trades", "?"))
+            dd_str = format_pct(m.get("max_drawdown_pct"))
+            win_str = format_pct(m.get("win_rate_pct"))
+            dur_str = format_duration(r["duration_s"])
+            print(detail(
+                f"[{status_pass()}] {tag}",
+                f"return={ret_str}  sharpe={sharpe_str}  "
+                f"DD={dd_str}  win={win_str}  trades={trades_str}  {dur_str}",
+            ))
+        elif r["status"] == "fail":
+            counters["fail"] += 1
+            err = (r.get("error") or "")[:60]
+            print(detail(f"[{status_fail()}] {tag}", f"{err}  {format_duration(r['duration_s'])}"))
+        else:
+            counters["skip"] += 1
+            print(detail(f"[{status_skip()}] {tag}", r.get("error", "")[:60]))
 
 
 # ============================================================================
@@ -1010,6 +1072,10 @@ Examples:
     parser.add_argument("--trading-only", action="store_true", help="Only run trading strategy backtests")
     parser.add_argument("--portfolio-only", action="store_true", help="Only run portfolio strategy backtests")
     parser.add_argument("--export", type=str, default=None, metavar="PATH", help="Export results to JSON file")
+    parser.add_argument(
+        "--workers", type=int, default=1, metavar="N",
+        help="Number of parallel worker processes for backtests (default: 1 = sequential)",
+    )
     args = parser.parse_args()
 
     include_trading = not args.portfolio_only
@@ -1020,6 +1086,7 @@ Examples:
         include_portfolio=include_portfolio,
         quick=args.quick,
         export_path=args.export,
+        max_workers=max(1, args.workers),
     )
 
     # Exit code: non-zero if any failures

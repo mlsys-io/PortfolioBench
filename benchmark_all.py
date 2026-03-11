@@ -23,6 +23,7 @@ import os
 import sys
 import time
 import traceback
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -461,6 +462,40 @@ def _run_single_backtest(
             backtesting.exchange.close()
 
 
+def _backtest_worker(
+    strategy_name: str,
+    strategy_path: str,
+    pairs: List[str],
+    timeframe: str,
+    timerange: str,
+    wallet: float,
+) -> Dict[str, Any]:
+    """Top-level function that can be pickled for ProcessPoolExecutor."""
+    t0 = time.time()
+    try:
+        result = _run_single_backtest(
+            strategy_name=strategy_name,
+            strategy_path=strategy_path,
+            pairs=pairs,
+            timeframe=timeframe,
+            timerange=timerange,
+            wallet=wallet,
+        )
+        dt = time.time() - t0
+        return {
+            "status": "pass",
+            "metrics": result.get("metrics", {}),
+            "duration_s": round(dt, 1),
+        }
+    except Exception as e:
+        dt = time.time() - t0
+        return {
+            "status": "fail",
+            "error": str(e).split("\n")[0][:120],
+            "duration_s": round(dt, 1),
+        }
+
+
 def run_freqtrade_backtests(
     strategies: List[str],
     strategy_path: str,
@@ -468,74 +503,131 @@ def run_freqtrade_backtests(
     categories: Dict[str, List[str]],
     timeframes: Dict[str, Dict],
     wallet: float = 1_000_000,
+    max_workers: int = 1,
 ) -> Dict[str, Any]:
-    """Run backtests for a set of strategies across categories and timeframes."""
+    """Run backtests for a set of strategies across categories and timeframes.
+
+    When *max_workers* > 1, backtests are dispatched to a process pool for
+    concurrent execution.
+    """
     banner(f"{phase_name}")
     results = {
         "passed": 0, "failed": 0, "skipped": 0,
         "details": [], "backtest_results": [],
     }
 
-    total = len(strategies) * len(categories) * len(timeframes)
-    completed = 0
-
+    # Build ordered task list
+    tasks: List[Tuple[str, str, List[str], str, str]] = []
     for strat in strategies:
         for cat_name, pairs in categories.items():
             for tf, tf_cfg in timeframes.items():
-                completed += 1
-                label = f"{strat} | {cat_name} | {tf}"
-                progress = f"[{completed}/{total}]"
+                tasks.append((strat, cat_name, pairs, tf, tf_cfg["timerange"]))
 
-                section(f"{progress} {label}")
-                info(f"Pairs: {', '.join(pairs)}")
-                info(f"Range: {tf_cfg['timerange']}")
+    total = len(tasks)
 
-                t0 = time.time()
+    if max_workers > 1 and total > 1:
+        info(f"Running {total} backtests across {max_workers} workers")
+        task_results: Dict[int, Dict[str, Any]] = {}
+
+        with ProcessPoolExecutor(max_workers=max_workers) as pool:
+            future_to_idx = {}
+            for idx, (strat, cat_name, pairs, tf, timerange) in enumerate(tasks):
+                fut = pool.submit(
+                    _backtest_worker,
+                    strategy_name=strat,
+                    strategy_path=strategy_path,
+                    pairs=pairs,
+                    timeframe=tf,
+                    timerange=timerange,
+                    wallet=wallet,
+                )
+                future_to_idx[fut] = idx
+
+            for fut in as_completed(future_to_idx):
+                idx = future_to_idx[fut]
                 try:
-                    result = _run_single_backtest(
-                        strategy_name=strat,
-                        strategy_path=strategy_path,
-                        pairs=pairs,
-                        timeframe=tf,
-                        timerange=tf_cfg["timerange"],
-                        wallet=wallet,
-                    )
-                    dt = time.time() - t0
-                    m = result.get("metrics", {})
-                    ok(f"Completed in {elapsed_str(dt)}")
-                    if m.get("total_return_pct") is not None:
-                        ret_color = C.GREEN if m["total_return_pct"] >= 0 else C.RED
-                        info(
-                            f"Return: {ret_color}{m['total_return_pct']:+.2f}%{C.RESET}  "
-                            f"Sharpe: {m.get('sharpe', 'N/A')}  "
-                            f"DD: {m.get('max_drawdown_pct', 'N/A')}%  "
-                            f"Trades: {m.get('trades', 'N/A')}  "
-                            f"Win: {m.get('win_rate_pct', 'N/A')}%"
-                        )
-                    results["passed"] += 1
-                    results["backtest_results"].append({
-                        "strategy": strat,
-                        "category": cat_name,
-                        "timeframe": tf,
-                        "duration_s": round(dt, 1),
-                        "status": "pass",
-                        "metrics": m,
-                    })
-                except Exception as e:
-                    dt = time.time() - t0
-                    err_msg = str(e).split("\n")[0][:120]
-                    fail(f"Failed after {elapsed_str(dt)}: {err_msg}")
-                    results["failed"] += 1
-                    results["backtest_results"].append({
-                        "strategy": strat,
-                        "category": cat_name,
-                        "timeframe": tf,
-                        "duration_s": round(dt, 1),
+                    task_results[idx] = fut.result()
+                except Exception as exc:
+                    task_results[idx] = {
                         "status": "fail",
-                        "error": err_msg,
-                    })
+                        "error": str(exc)[:120],
+                        "duration_s": 0.0,
+                    }
+
+        # Print in original order
+        for idx, (strat, cat_name, pairs, tf, timerange) in enumerate(tasks):
+            r = task_results[idx]
+            label = f"{strat} | {cat_name} | {tf}"
+            progress = f"[{idx + 1}/{total}]"
+            section(f"{progress} {label}")
+            _print_and_record_result(r, strat, cat_name, tf, pairs, timerange, results)
+    else:
+        # Sequential fallback
+        for idx, (strat, cat_name, pairs, tf, timerange) in enumerate(tasks):
+            label = f"{strat} | {cat_name} | {tf}"
+            progress = f"[{idx + 1}/{total}]"
+
+            section(f"{progress} {label}")
+            info(f"Pairs: {', '.join(pairs)}")
+            info(f"Range: {timerange}")
+
+            r = _backtest_worker(
+                strategy_name=strat,
+                strategy_path=strategy_path,
+                pairs=pairs,
+                timeframe=tf,
+                timerange=timerange,
+                wallet=wallet,
+            )
+            _print_and_record_result(r, strat, cat_name, tf, pairs, timerange, results)
 
     return results
+
+
+def _print_and_record_result(
+    r: Dict[str, Any],
+    strat: str,
+    cat_name: str,
+    tf: str,
+    pairs: List[str],
+    timerange: str,
+    results: Dict[str, Any],
+):
+    """Print a single backtest result and append it to the results dict."""
+    dt = r.get("duration_s", 0.0)
+    if r["status"] == "pass":
+        m = r.get("metrics", {})
+        ok(f"Completed in {elapsed_str(dt)}")
+        if m.get("total_return_pct") is not None:
+            ret_color = C.GREEN if m["total_return_pct"] >= 0 else C.RED
+            info(
+                f"Return: {ret_color}{m['total_return_pct']:+.2f}%{C.RESET}  "
+                f"Sharpe: {m.get('sharpe', 'N/A')}  "
+                f"DD: {m.get('max_drawdown_pct', 'N/A')}%  "
+                f"Trades: {m.get('trades', 'N/A')}  "
+                f"Win: {m.get('win_rate_pct', 'N/A')}%"
+            )
+        results["passed"] += 1
+        results["backtest_results"].append({
+            "strategy": strat,
+            "category": cat_name,
+            "timeframe": tf,
+            "duration_s": round(dt, 1),
+            "status": "pass",
+            "metrics": m,
+        })
+    else:
+        err_msg = r.get("error", "unknown error")
+        fail(f"Failed after {elapsed_str(dt)}: {err_msg}")
+        results["failed"] += 1
+        results["backtest_results"].append({
+            "strategy": strat,
+            "category": cat_name,
+            "timeframe": tf,
+            "duration_s": round(dt, 1),
+            "status": "fail",
+            "error": err_msg,
+        })
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -688,6 +780,8 @@ def main():
                         help="Limit to specific asset categories")
     parser.add_argument("--json-output", type=str, default=None,
                         help="Write results to a JSON file")
+    parser.add_argument("--workers", type=int, default=1, metavar="N",
+                        help="Number of parallel worker processes for backtests (default: 1 = sequential)")
     args = parser.parse_args()
 
     print(f"{C.CYAN}{C.BOLD}")
@@ -737,6 +831,7 @@ def main():
                     phase_name="Phase 4: Trading Strategy Backtests",
                     categories=categories,
                     timeframes=timeframes,
+                    max_workers=max(1, args.workers),
                 )
 
         # Portfolio strategies
@@ -753,6 +848,7 @@ def main():
                     categories=categories,
                     timeframes=timeframes,
                     wallet=1_000_000,
+                    max_workers=max(1, args.workers),
                 )
 
     total_time = time.time() - t_start
