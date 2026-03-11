@@ -23,6 +23,7 @@ import sys
 import tarfile
 import tempfile
 import time
+import zipfile
 from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -33,10 +34,9 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 GDRIVE_FILES = {
     "portfoliobench": {
-        "file_id": "1BxEHMo5l8v7cZRqL-KQ2kP4d_Jxae5Vy",
         "folder_id": "18DqXyrfxDXxibC9gjm9TFzXolhaOBmyk",
         "folder_url": "https://drive.google.com/drive/folders/18DqXyrfxDXxibC9gjm9TFzXolhaOBmyk",
-        "archive_name": "usstock_data.tar.gz",
+        "archive_name": "usstock_data.zip",
         "description": "Crypto + US Stocks + Global Indices (357 feather files)",
         "output_dirs": ["user_data/data/usstock", "user_data/data/portfoliobench"],
         "min_expected_files": 357,
@@ -44,7 +44,7 @@ GDRIVE_FILES = {
     "polymarket": {
         "folder_id": "1x5jQ_8tkQhJuinhLKIctqa7aZ8D1uUHf",
         "folder_url": "https://drive.google.com/drive/folders/1x5jQ_8tkQhJuinhLKIctqa7aZ8D1uUHf",
-        "archive_name": "polymarket_data.tar.gz",
+        "archive_name": "polymarket_data.zip",
         "description": "Polymarket prediction-market contracts",
         "output_dirs": ["user_data/data/polymarket"],
     },
@@ -60,8 +60,11 @@ def _count_feather_files(directory: str) -> int:
     return sum(1 for f in os.listdir(directory) if f.endswith(".feather"))
 
 
-def _is_valid_gzip(filepath: str) -> bool:
-    """Check if a file starts with the gzip magic bytes (\\x1f\\x8b).
+def _is_valid_archive(filepath: str) -> bool:
+    """Check if a file is a valid zip or gzip archive by inspecting magic bytes.
+
+    - Zip: starts with ``PK`` (``\\x50\\x4b``)
+    - Gzip: starts with ``\\x1f\\x8b``
 
     This detects the common failure mode where Google Drive returns an HTML
     error page (e.g. "quota exceeded", "access denied") instead of the
@@ -69,18 +72,19 @@ def _is_valid_gzip(filepath: str) -> bool:
     """
     try:
         with open(filepath, "rb") as f:
-            return f.read(2) == b"\x1f\x8b"
+            magic = f.read(4)
+            return magic[:2] in (b"\x1f\x8b", b"PK")
     except OSError:
         return False
 
 
-def _is_valid_download(filepath: str, expected_ext: str = ".tar.gz") -> bool:
-    """Validate that a downloaded file is genuine (not an HTML error page)."""
+def _is_valid_download(filepath: str) -> bool:
+    """Validate that a downloaded file is a genuine archive (not an HTML error page)."""
     if not os.path.isfile(filepath) or os.path.getsize(filepath) == 0:
         return False
-    if expected_ext == ".tar.gz" and not _is_valid_gzip(filepath):
+    if not _is_valid_archive(filepath):
         logger.warning(
-            "Downloaded file %s is not a valid gzip archive "
+            "Downloaded file %s is not a valid archive "
             "(likely an HTML error page from Google Drive)",
             filepath,
         )
@@ -102,7 +106,7 @@ def _download_file_via_requests(file_id: str, output_path: str) -> bool:
         return False
 
     os.makedirs(output_path, exist_ok=True)
-    dest = os.path.join(output_path, "archive.tar.gz")
+    dest = os.path.join(output_path, "archive_download")
 
     base_url = "https://drive.google.com/uc"
     params = {"id": file_id, "export": "download"}
@@ -137,8 +141,11 @@ def _download_file_via_requests(file_id: str, output_path: str) -> bool:
                 if chunk:
                     f.write(chunk)
 
-        if _is_valid_download(dest, ".tar.gz"):
-            logger.info("Requests-based download succeeded: %s", dest)
+        if _is_valid_download(dest):
+            # Rename to proper extension based on content
+            final = dest + (".zip" if open(dest, "rb").read(2) == b"PK" else ".tar.gz")
+            os.rename(dest, final)
+            logger.info("Requests-based download succeeded: %s", final)
             return True
         logger.warning("Requests-based download produced invalid file")
         if os.path.isfile(dest):
@@ -157,14 +164,14 @@ def _download_file_direct(gdown_mod, file_id: str, output_path: str) -> bool:
     """
     url = f"https://drive.google.com/uc?id={file_id}"
     os.makedirs(output_path, exist_ok=True)
-    dest = os.path.join(output_path, "archive.tar.gz")
+    dest = os.path.join(output_path, "archive_download")
 
     logger.info("Trying direct file download (file_id=%s)...", file_id)
     try:
         result = gdown_mod.download(
             url, dest, quiet=False, fuzzy=True, use_cookies=True,
         )
-        if result and _is_valid_download(dest, ".tar.gz"):
+        if result and _is_valid_download(dest):
             logger.info("Direct file download succeeded: %s", dest)
             return True
         logger.warning("Direct download returned no file or invalid file")
@@ -175,6 +182,16 @@ def _download_file_direct(gdown_mod, file_id: str, output_path: str) -> bool:
     return False
 
 
+def _count_archive_files(directory: str) -> int:
+    """Count .zip and .tar.gz archive files in a directory (non-recursive)."""
+    if not os.path.isdir(directory):
+        return 0
+    return sum(
+        1 for f in os.listdir(directory)
+        if f.endswith(".zip") or f.endswith(".tar.gz")
+    )
+
+
 def _download_folder(
     gdown_mod, folder_id: str, output_path: str,
     min_expected: int = 0,
@@ -182,8 +199,8 @@ def _download_folder(
     """Download an entire Google Drive folder using gdown.download_folder().
 
     Uses ``remaining_ok=True`` to avoid gdown's 50-file hard error.
-    Returns False if the number of downloaded files is below *min_expected*,
-    so the caller can fall through to a more capable strategy.
+    The folder may contain zip archives (each containing feather files)
+    or loose feather files directly.
     """
     url = f"https://drive.google.com/drive/folders/{folder_id}"
 
@@ -196,20 +213,30 @@ def _download_folder(
         gdown_mod.download_folder(
             url, output=output_path, quiet=False, remaining_ok=True,
         )
-        n_files = _count_feather_files(output_path)
-        if n_files == 0:
-            logger.warning("Folder download produced no feather files")
+
+        # Check for downloaded archives or feather files
+        n_archives = _count_archive_files(output_path)
+        n_feather = _count_feather_files(output_path)
+
+        if n_archives > 0:
+            logger.info(
+                "Folder download complete: %d archive(s) in %s", n_archives, output_path,
+            )
+            return True
+
+        if n_feather == 0:
+            logger.warning("Folder download produced no feather or archive files")
             return False
 
-        if min_expected > 0 and n_files < min_expected:
+        if min_expected > 0 and n_feather < min_expected:
             logger.warning(
                 "Folder download incomplete: got %d feather files, expected >= %d "
                 "(gdown folder listing is limited to ~50 files per page)",
-                n_files, min_expected,
+                n_feather, min_expected,
             )
             return False
 
-        logger.info("Folder download complete: %d feather files in %s", n_files, output_path)
+        logger.info("Folder download complete: %d feather files in %s", n_feather, output_path)
         return True
     except Exception as e:
         logger.warning("Folder download failed: %s", e)
@@ -312,29 +339,33 @@ def _download_folder_via_api(
         logger.warning("API listing returned no files")
         return False
 
-    feather_entries = [f for f in file_entries if f["name"].endswith(".feather")]
+    # Look for zip/tar.gz archives first, then feather files
+    downloadable = [
+        f for f in file_entries
+        if f["name"].endswith((".zip", ".tar.gz", ".feather"))
+    ]
     logger.info(
-        "API listed %d total files (%d feather files)",
-        len(file_entries), len(feather_entries),
+        "API listed %d total files (%d downloadable: archives + feather)",
+        len(file_entries), len(downloadable),
     )
 
-    if not feather_entries:
-        logger.warning("No feather files found in API listing")
+    if not downloadable:
+        logger.warning("No downloadable files found in API listing")
         return False
 
     os.makedirs(output_path, exist_ok=True)
 
     # Skip files that were already downloaded by a previous strategy
     existing = set(os.listdir(output_path)) if os.path.isdir(output_path) else set()
-    to_download = [f for f in feather_entries if f["name"] not in existing]
+    to_download = [f for f in downloadable if f["name"] not in existing]
 
     logger.info(
-        "%d feather files already present, %d remaining to download",
-        len(existing & {f["name"] for f in feather_entries}),
+        "%d files already present, %d remaining to download",
+        len(existing & {f["name"] for f in downloadable}),
         len(to_download),
     )
 
-    downloaded = len(existing & {f["name"] for f in feather_entries})
+    downloaded = len(existing & {f["name"] for f in downloadable})
     for i, entry in enumerate(to_download, 1):
         file_url = f"https://drive.google.com/uc?id={entry['id']}"
         dest = os.path.join(output_path, entry["name"])
@@ -352,7 +383,7 @@ def _download_folder_via_api(
         if i % 50 == 0:
             logger.info("  Progress: %d/%d files downloaded", i, len(to_download))
 
-    logger.info("API download complete: %d/%d feather files", downloaded, len(feather_entries))
+    logger.info("API download complete: %d/%d files", downloaded, len(downloadable))
     return downloaded > 0
 
 
@@ -504,7 +535,7 @@ def download_from_gdrive(
 
 
 def extract_archive(archive_path: str, dest_dirs: list[str]) -> int:
-    """Extract a tar.gz archive into one or more destination directories.
+    """Extract a zip or tar.gz archive into one or more destination directories.
 
     Returns the number of unique feather files extracted.
     """
@@ -512,8 +543,16 @@ def extract_archive(archive_path: str, dest_dirs: list[str]) -> int:
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         logger.info("Extracting %s...", archive_path)
-        with tarfile.open(archive_path, "r:gz") as tar:
-            tar.extractall(tmp_dir)
+
+        if zipfile.is_zipfile(archive_path):
+            with zipfile.ZipFile(archive_path, "r") as zf:
+                zf.extractall(tmp_dir)
+        elif tarfile.is_tarfile(archive_path):
+            with tarfile.open(archive_path, "r:*") as tar:
+                tar.extractall(tmp_dir)
+        else:
+            logger.error("Unrecognised archive format: %s", archive_path)
+            return 0
 
         # Find all feather files in the extracted tree
         tmp_path = Path(tmp_dir)
@@ -590,14 +629,17 @@ def download_exchange_data(exchange: str, output_dir: str | None = None) -> bool
 
         # Check if downloaded files are an archive or direct feather files
         archive_path = None
-        for f in Path(download_dir).rglob("*.tar.gz"):
-            if _is_valid_gzip(str(f)):
-                archive_path = str(f)
+        for pattern in ("*.zip", "*.tar.gz"):
+            for f in Path(download_dir).rglob(pattern):
+                if _is_valid_archive(str(f)):
+                    archive_path = str(f)
+                    break
+                else:
+                    logger.warning(
+                        "Found %s but it is not a valid archive (skipping)", f,
+                    )
+            if archive_path:
                 break
-            else:
-                logger.warning(
-                    "Found %s but it is not a valid gzip archive (skipping)", f,
-                )
 
         if archive_path:
             try:
