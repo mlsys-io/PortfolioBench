@@ -1,4 +1,4 @@
 [submodule "freqtrade"]
 	path = freqtrade
 	url = https://github.com/mlsys-io/freqtrade.git
-	branch = claude/fix-portfoliobench-actions-WE67c
+	branch = claude/freqtrade-submodule-GsDfB
