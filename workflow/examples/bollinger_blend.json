@@ -1,0 +1,49 @@
+{
+  "apiVersion": "lumid/v1",
+  "kind": "PortbenchWorkflow",
+  "metadata": {
+    "name": "bollinger-blend",
+    "annotations": {
+      "description": "Bollinger Bands mean-reversion alpha with blended portfolio for US equities."
+    }
+  },
+  "spec": {
+    "stages": {
+      "alpha": {
+        "taskType": "alpha",
+        "params": {
+          "type": "bollinger"
+        }
+      },
+      "strategy": {
+        "taskType": "strategy",
+        "dependsOn": ["alpha"],
+        "params": {
+          "type": "bollinger"
+        }
+      },
+      "portfolio": {
+        "taskType": "portfolio",
+        "dependsOn": ["strategy"],
+        "params": {
+          "type": "blend",
+          "ons": {
+            "eta": 0.1,
+            "beta": 1.0,
+            "delta": 0.2
+          },
+          "blend_weights": {
+            "equal": 0.50,
+            "ons": 0.25,
+            "signal": 0.25
+          }
+        }
+      }
+    },
+    "backtest": {
+      "pairs": ["AAPL/USD", "MSFT/USD", "GOOG/USD"],
+      "timeframe": "1d",
+      "initial_capital": 100000
+    }
+  }
+}
