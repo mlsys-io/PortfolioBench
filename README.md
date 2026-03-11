@@ -272,13 +272,14 @@ New tickers are automatically recognized — no exchange configuration needed.
 
 ```
 PortfolioBench/
+├── freqtrade/                 # Git submodule → mlsys-io/freqtrade
+│   └── freqtrade/exchange/
+│       ├── portfoliobench.py  # Multi-asset exchange (extends Binance)
+│       └── polymarket.py      # Polymarket prediction market exchange
 ├── strategy/                  # 8 trading strategies (IStrategy implementations)
 ├── user_data/strategies/      # 8 portfolio algorithms
 ├── alpha/                     # 5 pluggable alpha factors (IAlpha interface)
 ├── portfolio/                 # Standalone portfolio construction pipeline
-├── freqtrade/exchange/
-│   ├── portfoliobench.py      # Multi-asset exchange (extends Binance)
-│   └── polymarket.py          # Polymarket prediction market exchange
 ├── benchmark.py               # Benchmarking suite with formatted reports
 ├── benchmark_all.py           # Full benchmark matrix runner
 ├── tests/                     # Unit and integration tests
