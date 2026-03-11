@@ -133,6 +133,7 @@ jobs:
       - name: Download data from Google Drive
         id: download-data
         if: steps.cache-data.outputs.cache-hit != 'true'
+        timeout-minutes: 10
         run: |
           python utils/download_data.py --exchange portfoliobench
         continue-on-error: true

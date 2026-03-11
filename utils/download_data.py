@@ -60,6 +60,94 @@ def _count_feather_files(directory: str) -> int:
     return sum(1 for f in os.listdir(directory) if f.endswith(".feather"))
 
 
+def _is_valid_gzip(filepath: str) -> bool:
+    """Check if a file starts with the gzip magic bytes (\\x1f\\x8b).
+
+    This detects the common failure mode where Google Drive returns an HTML
+    error page (e.g. "quota exceeded", "access denied") instead of the
+    actual archive, which gdown silently saves to disk.
+    """
+    try:
+        with open(filepath, "rb") as f:
+            return f.read(2) == b"\x1f\x8b"
+    except OSError:
+        return False
+
+
+def _is_valid_download(filepath: str, expected_ext: str = ".tar.gz") -> bool:
+    """Validate that a downloaded file is genuine (not an HTML error page)."""
+    if not os.path.isfile(filepath) or os.path.getsize(filepath) == 0:
+        return False
+    if expected_ext == ".tar.gz" and not _is_valid_gzip(filepath):
+        logger.warning(
+            "Downloaded file %s is not a valid gzip archive "
+            "(likely an HTML error page from Google Drive)",
+            filepath,
+        )
+        return False
+    return True
+
+
+def _download_file_via_requests(file_id: str, output_path: str) -> bool:
+    """Download a Google Drive file using requests with confirmation handling.
+
+    This bypasses gdown entirely and handles the large-file confirmation
+    flow (virus scan warning) that Google Drive shows for big files.
+    Falls back gracefully if ``requests`` is not available.
+    """
+    try:
+        import requests
+    except ImportError:
+        logger.warning("requests not available for direct download fallback")
+        return False
+
+    os.makedirs(output_path, exist_ok=True)
+    dest = os.path.join(output_path, "archive.tar.gz")
+
+    base_url = "https://drive.google.com/uc"
+    params = {"id": file_id, "export": "download"}
+    session = requests.Session()
+
+    logger.info("Trying requests-based download (file_id=%s)...", file_id)
+    try:
+        resp = session.get(base_url, params=params, stream=True, timeout=30)
+
+        # Handle the confirmation page for large files
+        for key, value in resp.cookies.items():
+            if key.startswith("download_warning"):
+                params["confirm"] = value
+                resp = session.get(base_url, params=params, stream=True, timeout=30)
+                break
+
+        # Also check for confirm token in response text for newer Drive pages
+        if resp.headers.get("content-type", "").startswith("text/html"):
+            content = resp.text
+            confirm_match = re.search(r'confirm=([0-9A-Za-z_-]+)', content)
+            if confirm_match:
+                params["confirm"] = confirm_match.group(1)
+                resp = session.get(base_url, params=params, stream=True, timeout=30)
+            else:
+                logger.warning("Got HTML response without confirm token")
+                return False
+
+        resp.raise_for_status()
+
+        with open(dest, "wb") as f:
+            for chunk in resp.iter_content(chunk_size=32768):
+                if chunk:
+                    f.write(chunk)
+
+        if _is_valid_download(dest, ".tar.gz"):
+            logger.info("Requests-based download succeeded: %s", dest)
+            return True
+        logger.warning("Requests-based download produced invalid file")
+        if os.path.isfile(dest):
+            os.remove(dest)
+    except Exception as e:
+        logger.warning("Requests-based download failed: %s", e)
+    return False
+
+
 def _download_file_direct(gdown_mod, file_id: str, output_path: str) -> bool:
     """Try downloading a single file directly by its Google Drive file ID.
 
@@ -76,10 +164,12 @@ def _download_file_direct(gdown_mod, file_id: str, output_path: str) -> bool:
         result = gdown_mod.download(
             url, dest, quiet=False, fuzzy=True, use_cookies=True,
         )
-        if result and os.path.isfile(dest) and os.path.getsize(dest) > 0:
+        if result and _is_valid_download(dest, ".tar.gz"):
             logger.info("Direct file download succeeded: %s", dest)
             return True
-        logger.warning("Direct download returned no file or empty file")
+        logger.warning("Direct download returned no file or invalid file")
+        if os.path.isfile(dest):
+            os.remove(dest)
     except Exception as e:
         logger.warning("Direct file download failed: %s", e)
     return False
@@ -333,26 +423,31 @@ def _download_folder_individually(
 def download_from_gdrive(
     folder_id: str,
     output_path: str,
-    max_retries: int = 4,
+    max_retries: int = 2,
     file_id: str | None = None,
     min_expected_files: int = 0,
 ) -> bool:
-    """Download data from Google Drive using gdown.
+    """Download data from Google Drive using gdown with requests fallback.
 
-    Tries four strategies in order:
-      1. Direct file download (if *file_id* is provided) -- most reliable for
-         large archives because it bypasses folder-listing permissions.
-      2. Folder download -- bulk-downloads folder contents (with
+    Tries five strategies in order:
+      1. Requests-based direct download (if *file_id* is provided) -- does not
+         depend on gdown; handles Google Drive's large-file confirmation flow.
+      2. Direct file download via gdown (if *file_id* is provided) -- most
+         reliable for large archives because it bypasses folder-listing.
+      3. Folder download -- bulk-downloads folder contents (with
          ``remaining_ok=True`` to handle folders with >50 files).  Returns
          False when the number of files is below *min_expected_files*, so that
          subsequent strategies can fetch the remaining files.
-      3. API-based folder download -- uses the Google Drive v3 API to list ALL
+      4. API-based folder download -- uses the Google Drive v3 API to list ALL
          files in the folder (with pagination), then downloads each file
          individually.  Builds on any files already present in *output_path*.
-      4. Individual file download via gdown listing -- lists folder contents
+      5. Individual file download via gdown listing -- lists folder contents
          via gdown (limited to ~50 files) then downloads one-by-one.
 
-    Each strategy is retried with exponential backoff (2s, 4s, 8s, 16s).
+    Each strategy is retried up to *max_retries* times with exponential
+    backoff (2s, 4s).  The default of 2 retries per strategy keeps total
+    wall-clock time reasonable (~2-3 min) while still allowing transient
+    failures to recover.
     """
     try:
         import gdown
@@ -364,6 +459,7 @@ def download_from_gdrive(
 
     strategies: list[tuple[str, ...]] = []
     if file_id:
+        strategies.append(("requests_direct", file_id))
         strategies.append(("direct_file", file_id))
     strategies.append(("folder", folder_id))
     strategies.append(("folder_api", folder_id))
@@ -376,7 +472,9 @@ def download_from_gdrive(
                 strategy_name, gid, attempt, max_retries,
             )
 
-            if strategy_name == "direct_file":
+            if strategy_name == "requests_direct":
+                ok = _download_file_via_requests(gid, output_path)
+            elif strategy_name == "direct_file":
                 ok = _download_file_direct(gdown, gid, output_path)
             elif strategy_name == "folder":
                 ok = _download_folder(
@@ -392,7 +490,7 @@ def download_from_gdrive(
                 return True
 
             if attempt < max_retries:
-                wait = 2 ** attempt  # 2, 4, 8, 16 seconds
+                wait = 2 ** attempt  # 2, 4 seconds
                 logger.info("Retrying in %ds...", wait)
                 time.sleep(wait)
 
@@ -493,11 +591,20 @@ def download_exchange_data(exchange: str, output_dir: str | None = None) -> bool
         # Check if downloaded files are an archive or direct feather files
         archive_path = None
         for f in Path(download_dir).rglob("*.tar.gz"):
-            archive_path = str(f)
-            break
+            if _is_valid_gzip(str(f)):
+                archive_path = str(f)
+                break
+            else:
+                logger.warning(
+                    "Found %s but it is not a valid gzip archive (skipping)", f,
+                )
 
         if archive_path:
-            n_unique = extract_archive(archive_path, dest_dirs)
+            try:
+                n_unique = extract_archive(archive_path, dest_dirs)
+            except Exception as e:
+                logger.error("Failed to extract archive %s: %s", archive_path, e)
+                return False
         else:
             # Direct feather files downloaded from folder
             feather_files = list(Path(download_dir).rglob("*.feather"))
