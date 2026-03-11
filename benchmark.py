@@ -240,53 +240,181 @@ def run_single_backtest(
 
 
 def _extract_backtest_metrics(bt_results: Any, strategy_name: str) -> Dict[str, Any]:
-    """Pull key metrics from freqtrade backtest result structure."""
+    """Pull key metrics from freqtrade backtest result structure.
+
+    Freqtrade backtests return a deeply nested dict. This function searches
+    multiple known locations for key performance metrics to ensure we capture
+    return, Sharpe, drawdown, win rate, and other details regardless of the
+    exact result layout.
+    """
     metrics: Dict[str, Any] = {}
 
     if bt_results is None:
         return metrics
 
     try:
-        # bt_results is a dict keyed by strategy name
+        # bt_results is typically a dict keyed by strategy name
         if isinstance(bt_results, dict) and strategy_name in bt_results:
             strat_result = bt_results[strategy_name]
         elif isinstance(bt_results, dict) and "strategy" in bt_results:
             strat_result = bt_results
         elif isinstance(bt_results, dict):
-            # Try first key
             first_key = next(iter(bt_results), None)
             strat_result = bt_results.get(first_key, bt_results)
         else:
             return metrics
 
-        # Navigate the nested result structure
-        if isinstance(strat_result, dict):
-            # Look for backtest_results -> metrics mapping
-            for key in ["results_per_pair", "results"]:
-                if key in strat_result:
+        if not isinstance(strat_result, dict):
+            return metrics
+
+        # Collect all candidate dicts to search for metrics.
+        # Freqtrade stores metrics at varying nesting depths depending on version.
+        candidates = [strat_result]
+        for sub_key in [
+            "results_per_pair", "results", "strategy_comparison",
+            "backtest_results", "backtest_result",
+        ]:
+            sub = strat_result.get(sub_key)
+            if isinstance(sub, dict):
+                candidates.append(sub)
+            elif isinstance(sub, list) and sub:
+                # results_per_pair is a list of dicts; the TOTAL row is usually last
+                for entry in sub:
+                    if isinstance(entry, dict):
+                        candidates.append(entry)
+
+        # ── Extract trades ──
+        for d in candidates:
+            if "trade_count" in d:
+                metrics["trades"] = d["trade_count"]
+                break
+        if "trades" not in metrics:
+            trades_df = strat_result.get("trades")
+            if trades_df is not None and hasattr(trades_df, "__len__"):
+                metrics["trades"] = len(trades_df)
+
+        # ── Extract total return ──
+        for d in candidates:
+            for key in ["profit_total", "profit_total_pct"]:
+                if key in d and d[key] is not None:
+                    val = float(d[key])
+                    # profit_total is a ratio (0.05 = 5%), profit_total_pct is already %
+                    if key == "profit_total":
+                        val *= 100
+                    metrics["total_return_pct"] = round(val, 2)
                     break
+            if "total_return_pct" in metrics:
+                break
 
-            # Extract from the strategy result dict
-            if "trade_count" in strat_result:
-                metrics["trades"] = strat_result.get("trade_count", 0)
-            if "profit_total" in strat_result:
-                metrics["total_return_pct"] = round(strat_result["profit_total"] * 100, 2)
-            if "profit_total_abs" in strat_result:
-                metrics["profit_abs"] = round(strat_result["profit_total_abs"], 2)
-            if "max_drawdown" in strat_result:
-                metrics["max_drawdown_pct"] = round(strat_result["max_drawdown"] * 100, 2)
-            if "sharpe" in strat_result:
-                metrics["sharpe"] = round(strat_result["sharpe"], 4)
-            if "win_rate" in strat_result:
-                metrics["win_rate_pct"] = round(strat_result["win_rate"] * 100, 2)
-            if "profit_factor" in strat_result:
-                metrics["profit_factor"] = round(strat_result["profit_factor"], 4)
+        # ── Extract absolute profit ──
+        for d in candidates:
+            if "profit_total_abs" in d and d["profit_total_abs"] is not None:
+                metrics["profit_abs"] = round(float(d["profit_total_abs"]), 2)
+                break
 
-            # Trades from backtest_results
-            if "trades" in strat_result:
-                trades_df = strat_result["trades"]
-                if hasattr(trades_df, "__len__"):
+        # ── Extract max drawdown ──
+        for d in candidates:
+            for key in ["max_drawdown", "max_drawdown_account", "max_drawdown_abs"]:
+                if key in d and d[key] is not None:
+                    val = float(d[key])
+                    if key in ("max_drawdown", "max_drawdown_account"):
+                        val *= 100  # convert ratio to pct
+                    metrics["max_drawdown_pct"] = round(val, 2)
+                    break
+            if "max_drawdown_pct" in metrics:
+                break
+
+        # ── Extract Sharpe ratio ──
+        for d in candidates:
+            for key in ["sharpe", "sharpe_ratio"]:
+                if key in d and d[key] is not None:
+                    metrics["sharpe"] = round(float(d[key]), 4)
+                    break
+            if "sharpe" in metrics:
+                break
+
+        # ── Extract Sortino ratio ──
+        for d in candidates:
+            for key in ["sortino", "sortino_ratio"]:
+                if key in d and d[key] is not None:
+                    metrics["sortino"] = round(float(d[key]), 4)
+                    break
+            if "sortino" in metrics:
+                break
+
+        # ── Extract Calmar ratio ──
+        for d in candidates:
+            if "calmar" in d and d["calmar"] is not None:
+                metrics["calmar"] = round(float(d["calmar"]), 4)
+                break
+
+        # ── Extract win rate ──
+        for d in candidates:
+            for key in ["win_rate", "wins", "winning_trades"]:
+                if key in d and d[key] is not None:
+                    if key == "win_rate":
+                        metrics["win_rate_pct"] = round(float(d[key]) * 100, 2)
+                    elif "trades" in metrics and metrics["trades"] > 0:
+                        metrics["win_rate_pct"] = round(
+                            float(d[key]) / metrics["trades"] * 100, 2
+                        )
+                    break
+            if "win_rate_pct" in metrics:
+                break
+
+        # ── Extract profit factor ──
+        for d in candidates:
+            if "profit_factor" in d and d["profit_factor"] is not None:
+                metrics["profit_factor"] = round(float(d["profit_factor"]), 4)
+                break
+
+        # ── Extract average trade duration ──
+        for d in candidates:
+            for key in [
+                "holding_avg", "avg_duration", "trade_duration_avg",
+                "duration_avg", "holding_avg_s",
+            ]:
+                if key in d and d[key] is not None:
+                    metrics["avg_duration"] = str(d[key])
+                    break
+            if "avg_duration" in metrics:
+                break
+
+        # ── Extract average profit per trade ──
+        for d in candidates:
+            for key in ["profit_mean", "profit_mean_pct"]:
+                if key in d and d[key] is not None:
+                    val = float(d[key])
+                    if key == "profit_mean":
+                        val *= 100
+                    metrics["avg_profit_pct"] = round(val, 2)
+                    break
+            if "avg_profit_pct" in metrics:
+                break
+
+        # ── Extract total profit from trades DataFrame when top-level keys missing ──
+        if "total_return_pct" not in metrics:
+            trades_df = strat_result.get("trades")
+            if trades_df is not None and hasattr(trades_df, "profit_abs"):
+                try:
+                    total_profit = float(trades_df["profit_abs"].sum())
+                    wallet = 1_000_000  # default
+                    metrics["total_return_pct"] = round(total_profit / wallet * 100, 2)
+                    metrics["profit_abs"] = round(total_profit, 2)
+                except Exception:
+                    pass
+            if trades_df is not None and hasattr(trades_df, "profit_ratio"):
+                try:
                     metrics.setdefault("trades", len(trades_df))
+                    if len(trades_df) > 0:
+                        wins = (trades_df["profit_ratio"] > 0).sum()
+                        metrics.setdefault(
+                            "win_rate_pct", round(float(wins) / len(trades_df) * 100, 2)
+                        )
+                        avg_pct = float(trades_df["profit_ratio"].mean()) * 100
+                        metrics.setdefault("avg_profit_pct", round(avg_pct, 2))
+                except Exception:
+                    pass
 
     except Exception:
         pass
@@ -458,6 +586,21 @@ def run_data_integrity_check() -> Dict[str, Any]:
             except Exception as e:
                 invalid.append(f"{f.name} ({e})")
 
+        # Detect data source: synthetic files are small, real data is larger
+        data_source = "unknown"
+        try:
+            sample = next(data_path.glob("BTC_USDT-1d.feather"), None)
+            if sample:
+                df_sample = pd.read_feather(sample)
+                # Synthetic data has exactly the date range 2024-01-01 to 2026-02-01
+                # and very uniform volume; real data typically has more rows
+                if len(df_sample) > 800:
+                    data_source = "Google Drive (real market data)"
+                else:
+                    data_source = "Synthetic (generated)"
+        except Exception:
+            pass
+
         result["details"] = {
             "total_files": total,
             "valid_files": valid,
@@ -465,6 +608,7 @@ def run_data_integrity_check() -> Dict[str, Any]:
             "unique_assets": len(assets),
             "timeframes": sorted(timeframes_found),
             "invalid_list": invalid[:10],  # cap at 10 for readability
+            "data_source": data_source,
         }
         result["status"] = "pass" if len(invalid) == 0 else "fail"
         if invalid:
@@ -667,9 +811,16 @@ def _run_strategy_suite(
                     counters["pass"] += 1
                     m = r.get("metrics", {})
                     ret_str = format_pct(m.get("total_return_pct"))
+                    sharpe_str = format_sharpe(m.get("sharpe"))
                     trades_str = str(m.get("trades", "?"))
+                    dd_str = format_pct(m.get("max_drawdown_pct"))
+                    win_str = format_pct(m.get("win_rate_pct"))
                     dur_str = format_duration(r["duration_s"])
-                    print(detail(f"[{status_pass()}] {tag}", f"return={ret_str}  trades={trades_str}  {dur_str}"))
+                    print(detail(
+                        f"[{status_pass()}] {tag}",
+                        f"return={ret_str}  sharpe={sharpe_str}  "
+                        f"DD={dd_str}  win={win_str}  trades={trades_str}  {dur_str}",
+                    ))
                 elif r["status"] == "fail":
                     counters["fail"] += 1
                     err = (r.get("error") or "")[:60]
@@ -755,29 +906,43 @@ def _print_leaderboard(title: str, backtest_results: List[Dict]):
         if ret is None:
             continue
         if name not in strat_best or ret > strat_best[name]["return"]:
+            m = r.get("metrics", {})
             strat_best[name] = {
                 "return": ret,
-                "sharpe": r.get("metrics", {}).get("sharpe"),
-                "trades": r.get("metrics", {}).get("trades", 0),
+                "sharpe": m.get("sharpe"),
+                "sortino": m.get("sortino"),
+                "trades": m.get("trades", 0),
                 "asset_class": r.get("asset_class", "?"),
                 "timeframe": r.get("timeframe", "?"),
-                "drawdown": r.get("metrics", {}).get("max_drawdown_pct"),
+                "drawdown": m.get("max_drawdown_pct"),
+                "win_rate": m.get("win_rate_pct"),
+                "profit_factor": m.get("profit_factor"),
+                "avg_profit": m.get("avg_profit_pct"),
             }
 
     ranked = sorted(strat_best.items(), key=lambda x: x[1]["return"], reverse=True)
 
     # Table header
-    hdr = f"  {'#':<4}{'Strategy':<35}{'Return':>10}{'Sharpe':>10}{'Trades':>8}{'DD':>10}{'Best On':>12}"
+    hdr = (
+        f"  {'#':<4}{'Strategy':<30}{'Return':>9}{'Sharpe':>9}{'Sortino':>9}"
+        f"{'DD':>9}{'Win%':>8}{'PF':>8}{'Trades':>8}{'Best On':>12}"
+    )
     print(_c(hdr, Colors.DIM))
-    print(_c("  " + "─" * 85, Colors.DIM))
+    print(_c("  " + "─" * 102, Colors.DIM))
 
     for i, (name, info) in enumerate(ranked, 1):
         ret_s = format_pct(info["return"])
         sharpe_s = format_sharpe(info.get("sharpe"))
+        sortino_s = format_sharpe(info.get("sortino"))
         trades_s = str(info.get("trades", "?"))
         dd_s = format_pct(info.get("drawdown"))
+        win_s = format_pct(info.get("win_rate"))
+        pf_s = format_sharpe(info.get("profit_factor"))
         best_s = f"{info['asset_class']}/{info['timeframe']}"
-        print(f"  {i:<4}{name:<35}{ret_s:>10}{sharpe_s:>10}{trades_s:>8}{dd_s:>10}{best_s:>12}")
+        print(
+            f"  {i:<4}{name:<30}{ret_s:>9}{sharpe_s:>9}{sortino_s:>9}"
+            f"{dd_s:>9}{win_s:>8}{pf_s:>8}{trades_s:>8}{best_s:>12}"
+        )
 
     print()
 

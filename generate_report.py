@@ -130,14 +130,31 @@ def _build_data_integrity_section(data: Dict[str, Any]) -> str:
     duration = di.get("duration_s", 0)
 
     rows = ""
-    for key in ["total_files", "valid_files", "invalid_files", "unique_assets"]:
+    for key, label in [
+        ("total_files", "Total Files"),
+        ("valid_files", "Valid Files"),
+        ("invalid_files", "Invalid Files"),
+        ("unique_assets", "Unique Assets"),
+    ]:
         val = details.get(key, "N/A")
-        label = key.replace("_", " ").title()
         rows += f"<tr><td>{label}</td><td>{val}</td></tr>\n"
 
     tfs = details.get("timeframes", [])
     if tfs:
         rows += f"<tr><td>Timeframes</td><td>{', '.join(tfs)}</td></tr>\n"
+
+    # Show expected vs actual file count
+    expected = details.get("unique_assets", 0)
+    if isinstance(expected, int) and expected > 0 and tfs:
+        expected_total = expected * len(tfs)
+        actual_total = details.get("total_files", 0)
+        coverage = f"{actual_total}/{expected_total}" if isinstance(actual_total, int) else "N/A"
+        rows += f"<tr><td>Coverage</td><td>{coverage} (assets &times; timeframes)</td></tr>\n"
+
+    # Data source indicator
+    data_source = details.get("data_source", "")
+    if data_source:
+        rows += f"<tr><td>Data Source</td><td>{data_source}</td></tr>\n"
 
     invalid_list = details.get("invalid_list", [])
     invalid_html = ""
@@ -174,11 +191,18 @@ def _build_alpha_section(data: Dict[str, Any]) -> str:
     for name, info in details.items():
         cols = ", ".join(info.get("columns_added", []))
         row_count = info.get("rows", "N/A")
+        # Collect sample values for display
+        sample_vals = []
+        for k, v in info.items():
+            if k not in ("rows", "columns_added") and isinstance(v, (int, float)):
+                sample_vals.append(f"{k}={v}")
+        samples_str = "; ".join(sample_vals) if sample_vals else "&mdash;"
         rows += f"""
         <tr>
           <td><strong>{name.upper()}</strong></td>
           <td>{row_count} rows</td>
           <td class="mono">{cols}</td>
+          <td class="mono" style="font-size:0.75rem">{samples_str}</td>
         </tr>
         """
 
@@ -189,8 +213,8 @@ def _build_alpha_section(data: Dict[str, Any]) -> str:
         {_status_badge(status)}
         <span class="duration">{_fmt_duration(duration)}</span>
       </div>
-      <table class="detail-table">
-        <thead><tr><th>Factor</th><th>Data</th><th>Columns Added</th></tr></thead>
+      <table class="detail-table" style="max-width:100%">
+        <thead><tr><th>Factor</th><th>Data</th><th>Columns Added</th><th>Sample Values</th></tr></thead>
         <tbody>{rows}</tbody>
       </table>
     </div>
@@ -224,8 +248,11 @@ def _build_pipeline_section(data: Dict[str, Any]) -> str:
         ("total_return_pct", "Total Return"),
         ("annualised_return_pct", "Annualised Return"),
         ("annualised_sharpe", "Sharpe Ratio"),
+        ("annualised_sortino", "Sortino Ratio"),
         ("max_drawdown_pct", "Max Drawdown"),
+        ("calmar", "Calmar Ratio"),
         ("n_bars", "Bars"),
+        ("profit_abs", "Absolute Profit"),
     ]:
         val = metrics.get(key)
         if val is None:
@@ -234,9 +261,12 @@ def _build_pipeline_section(data: Dict[str, Any]) -> str:
         elif key.endswith("_pct"):
             formatted = _fmt_pct(val)
             cls = _pct_class(val) if "drawdown" not in key else ("negative" if val < -10 else "neutral")
-        elif key == "annualised_sharpe":
+        elif key in ("annualised_sharpe", "annualised_sortino", "calmar"):
             formatted = _fmt_sharpe(val)
             cls = _sharpe_class(val)
+        elif key == "profit_abs":
+            formatted = f"${val:,.2f}" if isinstance(val, (int, float)) else str(val)
+            cls = _pct_class(val) if isinstance(val, (int, float)) else ""
         else:
             formatted = str(val)
             cls = ""
@@ -269,19 +299,24 @@ def _build_backtest_section(title: str, backtests: List[Dict]) -> str:
     strat_best: Dict[str, Dict] = {}
     for r in backtests:
         name = r.get("strategy", "?")
-        ret = r.get("metrics", {}).get("total_return_pct")
+        m = r.get("metrics", {})
+        ret = m.get("total_return_pct")
         if ret is None:
             continue
         if name not in strat_best or ret > strat_best[name]["return"]:
             strat_best[name] = {
                 "return": ret,
-                "sharpe": r.get("metrics", {}).get("sharpe"),
-                "trades": r.get("metrics", {}).get("trades", 0),
+                "sharpe": m.get("sharpe"),
+                "sortino": m.get("sortino"),
+                "calmar": m.get("calmar"),
+                "trades": m.get("trades", 0),
                 "asset_class": r.get("asset_class", "?"),
                 "timeframe": r.get("timeframe", "?"),
-                "drawdown": r.get("metrics", {}).get("max_drawdown_pct"),
-                "win_rate": r.get("metrics", {}).get("win_rate_pct"),
-                "profit_factor": r.get("metrics", {}).get("profit_factor"),
+                "drawdown": m.get("max_drawdown_pct"),
+                "win_rate": m.get("win_rate_pct"),
+                "profit_factor": m.get("profit_factor"),
+                "avg_profit": m.get("avg_profit_pct"),
+                "avg_duration": m.get("avg_duration"),
             }
 
     ranked = sorted(strat_best.items(), key=lambda x: x[1]["return"], reverse=True)
@@ -292,6 +327,7 @@ def _build_backtest_section(title: str, backtests: List[Dict]) -> str:
         medal_icon = {1: "&#129351;", 2: "&#129352;", 3: "&#129353;"}.get(i, str(i))
         ret_cls = _pct_class(info["return"])
         sharpe_cls = _sharpe_class(info.get("sharpe"))
+        sortino_cls = _sharpe_class(info.get("sortino"))
         dd_cls = "negative" if info.get("drawdown") is not None and info["drawdown"] < -10 else "neutral"
 
         leaderboard_rows += f"""
@@ -300,10 +336,12 @@ def _build_backtest_section(title: str, backtests: List[Dict]) -> str:
           <td class="strat-name">{name}</td>
           <td class="{ret_cls}">{_fmt_pct(info['return'])}</td>
           <td class="{sharpe_cls}">{_fmt_sharpe(info.get('sharpe'))}</td>
+          <td class="{sortino_cls}">{_fmt_sharpe(info.get('sortino'))}</td>
           <td>{info.get('trades', 'N/A')}</td>
           <td class="{dd_cls}">{_fmt_pct(info.get('drawdown'))}</td>
           <td>{_fmt_pct(info.get('win_rate'))}</td>
           <td>{_fmt_sharpe(info.get('profit_factor'))}</td>
+          <td>{_fmt_pct(info.get('avg_profit'))}</td>
           <td class="mono">{info['asset_class']}/{info['timeframe']}</td>
         </tr>
         """
@@ -313,6 +351,7 @@ def _build_backtest_section(title: str, backtests: List[Dict]) -> str:
     for r in backtests:
         status = r.get("status", "?")
         m = r.get("metrics", {})
+        dd_cls = "negative" if m.get("max_drawdown_pct") is not None and m["max_drawdown_pct"] < -10 else "neutral"
         detail_rows += f"""
         <tr>
           <td>{r.get('strategy', '?')}</td>
@@ -321,7 +360,13 @@ def _build_backtest_section(title: str, backtests: List[Dict]) -> str:
           <td>{_status_badge(status)}</td>
           <td class="{_pct_class(m.get('total_return_pct'))}">{_fmt_pct(m.get('total_return_pct'))}</td>
           <td class="{_sharpe_class(m.get('sharpe'))}">{_fmt_sharpe(m.get('sharpe'))}</td>
+          <td class="{_sharpe_class(m.get('sortino'))}">{_fmt_sharpe(m.get('sortino'))}</td>
+          <td class="{dd_cls}">{_fmt_pct(m.get('max_drawdown_pct'))}</td>
+          <td>{_fmt_pct(m.get('win_rate_pct'))}</td>
+          <td>{_fmt_sharpe(m.get('profit_factor'))}</td>
+          <td>{_fmt_pct(m.get('avg_profit_pct'))}</td>
           <td>{m.get('trades', 'N/A')}</td>
+          <td class="mono">{m.get('avg_duration', 'N/A')}</td>
           <td>{_fmt_duration(r.get('duration_s', 0))}</td>
         </tr>
         """
@@ -342,10 +387,12 @@ def _build_backtest_section(title: str, backtests: List[Dict]) -> str:
               <th>Strategy</th>
               <th>Best Return</th>
               <th>Sharpe</th>
+              <th>Sortino</th>
               <th>Trades</th>
               <th>Max DD</th>
               <th>Win Rate</th>
               <th>Profit Factor</th>
+              <th>Avg Profit</th>
               <th>Best On</th>
             </tr>
           </thead>
@@ -365,8 +412,14 @@ def _build_backtest_section(title: str, backtests: List[Dict]) -> str:
                 <th>Status</th>
                 <th>Return</th>
                 <th>Sharpe</th>
+                <th>Sortino</th>
+                <th>Max DD</th>
+                <th>Win Rate</th>
+                <th>Profit Factor</th>
+                <th>Avg Profit</th>
                 <th>Trades</th>
-                <th>Duration</th>
+                <th>Avg Duration</th>
+                <th>Runtime</th>
               </tr>
             </thead>
             <tbody>{detail_rows}</tbody>

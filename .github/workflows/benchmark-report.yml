@@ -106,12 +106,22 @@ jobs:
         run: |
           pip install --upgrade pip "setuptools<75" wheel
           pip install -r requirements.txt
-          pip install scipy pytest
+          pip install scipy pytest gdown
           pip install -e .
 
-      # ── Generate synthetic data ──
-      - name: Generate synthetic test data
-        run: portbench generate-data
+      # ── Download real data from Google Drive ──
+      - name: Download data from Google Drive
+        id: download-data
+        run: |
+          python utils/download_data.py --exchange portfoliobench
+        continue-on-error: true
+
+      # ── Fallback: generate synthetic data if download fails ──
+      - name: Fallback to synthetic data
+        if: steps.download-data.outcome == 'failure'
+        run: |
+          echo "Google Drive download failed — falling back to synthetic data"
+          portbench generate-data
 
       # ── Determine benchmark flags ──
       - name: Determine benchmark mode
