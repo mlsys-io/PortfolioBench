@@ -109,7 +109,7 @@ zip-safe = false
 where = [".", "freqtrade"]
 include = ["freqtrade*", "dataset*", "portfolio*", "strategy*", "alpha*", "utils*"]
 exclude = ["tests", "tests.*", "user_data", "user_data*"]
-namespaces = true
+namespaces = false
 
 [tool.setuptools.dynamic]
 version = {attr = "freqtrade.__version__"}
