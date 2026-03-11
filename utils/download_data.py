@@ -77,7 +77,12 @@ def _download_file_direct(gdown_mod, file_id: str, output_path: str) -> bool:
 
 
 def _download_folder(gdown_mod, folder_id: str, output_path: str) -> bool:
-    """Download an entire Google Drive folder using gdown.download_folder()."""
+    """Download an entire Google Drive folder using gdown.download_folder().
+
+    Handles folders with more than 50 files by first listing available files
+    (with ``remaining_ok=True`` to avoid gdown's 50-file hard error), then
+    downloading each file individually when the folder exceeds the limit.
+    """
     url = f"https://drive.google.com/drive/folders/{folder_id}"
 
     logger.info("Trying folder download (folder_id=%s)...", folder_id)
@@ -86,13 +91,74 @@ def _download_folder(gdown_mod, folder_id: str, output_path: str) -> bool:
             shutil.rmtree(output_path)
         os.makedirs(output_path, exist_ok=True)
 
-        gdown_mod.download_folder(url, output=output_path, quiet=False)
+        # First, try a normal folder download with remaining_ok=True so that
+        # folders with >50 files don't raise FolderContentsMaximumLimitError.
+        gdown_mod.download_folder(
+            url, output=output_path, quiet=False, remaining_ok=True,
+        )
         if os.path.isdir(output_path) and os.listdir(output_path):
             logger.info("Folder download complete: %s", output_path)
             return True
         logger.warning("Folder download produced empty or missing directory")
     except Exception as e:
         logger.warning("Folder download failed: %s", e)
+    return False
+
+
+def _download_folder_individually(
+    gdown_mod, folder_id: str, output_path: str,
+) -> bool:
+    """Download files from a Google Drive folder one-by-one.
+
+    Uses ``gdown.download_folder(skip_download=True, remaining_ok=True)`` to
+    list available file metadata (up to the first page of results), then
+    downloads each file individually via ``gdown.download()``.  This avoids
+    the 50-file crash while still retrieving as many files as the listing
+    provides.
+    """
+    url = f"https://drive.google.com/drive/folders/{folder_id}"
+
+    logger.info(
+        "Trying individual-file folder download (folder_id=%s)...", folder_id,
+    )
+    try:
+        os.makedirs(output_path, exist_ok=True)
+
+        # List files without downloading (remaining_ok suppresses >50 error)
+        file_entries = gdown_mod.download_folder(
+            url, output=output_path, quiet=False,
+            remaining_ok=True, skip_download=True,
+        )
+        if not file_entries:
+            logger.warning("No files listed in folder")
+            return False
+
+        logger.info("Listed %d files in folder, downloading individually...", len(file_entries))
+
+        downloaded = 0
+        for entry in file_entries:
+            file_url = f"https://drive.google.com/uc?id={entry.id}"
+            dest = entry.local_path
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            try:
+                result = gdown_mod.download(
+                    file_url, dest, quiet=False, use_cookies=True,
+                )
+                if result and os.path.isfile(dest) and os.path.getsize(dest) > 0:
+                    downloaded += 1
+                else:
+                    logger.warning("Failed to download %s", entry.path)
+            except Exception as exc:
+                logger.warning("Error downloading %s: %s", entry.path, exc)
+
+        if downloaded > 0:
+            logger.info(
+                "Individual download complete: %d/%d files", downloaded, len(file_entries),
+            )
+            return True
+        logger.warning("Individual-file download produced no files")
+    except Exception as e:
+        logger.warning("Individual-file folder download failed: %s", e)
     return False
 
 
@@ -104,10 +170,14 @@ def download_from_gdrive(
 ) -> bool:
     """Download data from Google Drive using gdown.
 
-    Tries two strategies in order:
-      1. Direct file download (if *file_id* is provided) — more reliable for
+    Tries three strategies in order:
+      1. Direct file download (if *file_id* is provided) — most reliable for
          large archives because it bypasses folder-listing permissions.
-      2. Folder download — lists the folder contents and downloads each file.
+      2. Folder download — bulk-downloads folder contents (with
+         ``remaining_ok=True`` to handle folders with >50 files).
+      3. Individual file download — lists folder contents then downloads each
+         file one-by-one via ``gdown.download()``, which is more resilient to
+         per-file permission or size issues.
 
     Each strategy is retried with exponential backoff (2s, 4s, 8s, 16s).
     """
@@ -123,6 +193,7 @@ def download_from_gdrive(
     if file_id:
         strategies.append(("direct_file", file_id))
     strategies.append(("folder", folder_id))
+    strategies.append(("folder_individual", folder_id))
 
     for strategy_name, gid in strategies:
         for attempt in range(1, max_retries + 1):
@@ -133,6 +204,8 @@ def download_from_gdrive(
 
             if strategy_name == "direct_file":
                 ok = _download_file_direct(gdown, gid, output_path)
+            elif strategy_name == "folder_individual":
+                ok = _download_folder_individually(gdown, gid, output_path)
             else:
                 ok = _download_folder(gdown, gid, output_path)
 
