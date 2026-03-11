@@ -392,6 +392,8 @@ def run_portfolio(
         data_dir = os.path.join(PROJECT_ROOT, "user_data", "data", "usstock")
     if pairs is None:
         pairs = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT", "MSFT/USD"]
+    if timeframe is None:
+        timeframe = "1d"
 
     # Step 1: Load raw OHLCV data
     print("=" * 60)
