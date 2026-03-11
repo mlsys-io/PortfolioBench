@@ -27,22 +27,30 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Google Drive file IDs for each exchange/dataset
+# Google Drive folder IDs for each exchange/dataset
 # ---------------------------------------------------------------------------
 GDRIVE_FILES = {
     "portfoliobench": {
-        "file_id": "1BxEHMo5l8v7cZRqL-KQ2kP4d_Jxae5Vy",
+        "folder_id": "18DqXyrfxDXxibC9gjm9TFzXolhaOBmyk",
+        "folder_url": "https://drive.google.com/drive/folders/18DqXyrfxDXxibC9gjm9TFzXolhaOBmyk",
         "archive_name": "usstock_data.tar.gz",
         "description": "Crypto + US Stocks + Global Indices (357 feather files)",
         "output_dirs": ["user_data/data/usstock", "user_data/data/portfoliobench"],
+    },
+    "polymarket": {
+        "folder_id": "1x5jQ_8tkQhJuinhLKIctqa7aZ8D1uUHf",
+        "folder_url": "https://drive.google.com/drive/folders/1x5jQ_8tkQhJuinhLKIctqa7aZ8D1uUHf",
+        "archive_name": "polymarket_data.tar.gz",
+        "description": "Polymarket prediction-market contracts",
+        "output_dirs": ["user_data/data/polymarket"],
     },
 }
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
-def download_from_gdrive(file_id: str, output_path: str) -> bool:
-    """Download a file from Google Drive using gdown."""
+def download_from_gdrive(folder_id: str, output_path: str) -> bool:
+    """Download a folder from Google Drive using gdown."""
     try:
         import gdown
     except ImportError:
@@ -51,15 +59,15 @@ def download_from_gdrive(file_id: str, output_path: str) -> bool:
         )
         return False
 
-    url = f"https://drive.google.com/uc?id={file_id}"
-    logger.info("Downloading from Google Drive (file_id=%s)...", file_id)
+    url = f"https://drive.google.com/drive/folders/{folder_id}"
+    logger.info("Downloading from Google Drive folder (folder_id=%s)...", folder_id)
 
     try:
-        gdown.download(url, output_path, quiet=False)
-        if os.path.isfile(output_path) and os.path.getsize(output_path) > 0:
+        gdown.download_folder(url, output=output_path, quiet=False)
+        if os.path.isdir(output_path) and os.listdir(output_path):
             logger.info("Download complete: %s", output_path)
             return True
-        logger.error("Download produced empty or missing file")
+        logger.error("Download produced empty or missing directory")
         return False
     except Exception as e:
         logger.error("Download failed: %s", e)
@@ -116,23 +124,41 @@ def download_exchange_data(exchange: str, output_dir: str | None = None) -> bool
     else:
         dest_dirs = config["output_dirs"]
 
-    # Download archive to temp file
-    with tempfile.NamedTemporaryFile(suffix=".tar.gz", delete=False) as tmp:
-        tmp_path = tmp.name
+    # Download folder to temp directory
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        download_dir = os.path.join(tmp_dir, "gdrive_download")
 
-    try:
-        if not download_from_gdrive(config["file_id"], tmp_path):
+        if not download_from_gdrive(config["folder_id"], download_dir):
             return False
 
-        n_files = extract_archive(tmp_path, dest_dirs)
+        # Check if downloaded files are an archive or direct feather files
+        archive_path = None
+        for f in Path(download_dir).rglob("*.tar.gz"):
+            archive_path = str(f)
+            break
+
+        if archive_path:
+            n_files = extract_archive(archive_path, dest_dirs)
+        else:
+            # Direct feather files downloaded from folder
+            feather_files = list(Path(download_dir).rglob("*.feather"))
+            if not feather_files:
+                logger.error("No feather or archive files found in download")
+                return False
+
+            n_files = 0
+            for dest_dir in dest_dirs:
+                dest_path = PROJECT_ROOT / dest_dir
+                dest_path.mkdir(parents=True, exist_ok=True)
+                for f in feather_files:
+                    shutil.copy2(f, dest_path / f.name)
+                    n_files += 1
+
         if n_files == 0:
             return False
 
         logger.info("Successfully downloaded %d files for %s", n_files, exchange)
         return True
-    finally:
-        if os.path.isfile(tmp_path):
-            os.unlink(tmp_path)
 
 
 def main():
