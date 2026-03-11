@@ -18,8 +18,8 @@ PortfolioBench is a **multi-asset portfolio benchmarking framework** built as a 
 
 ```
 PortfolioBench/
-├── freqtrade/                  # Vendored from upstream freqtrade (unmodified)
-│   └── exchange/
+├── freqtrade/                  # Git submodule → mlsys-io/freqtrade
+│   └── freqtrade/exchange/
 │       ├── portfoliobench.py   # Custom exchange subclass (extends Binance)
 │       └── polymarket.py       # Polymarket exchange subclass
 │
@@ -84,17 +84,17 @@ PortfolioBench/
 
 ## 3. Relationship to freqtrade
 
-### 3.1 What Was Copied
-The entire `freqtrade/` package is vendored from upstream freqtrade (commit `ed22b4e`, develop branch). This includes:
-- Backtesting engine (`freqtrade/optimize/backtesting.py`)
-- Strategy interface (`freqtrade/strategy/interface.py`)
-- Data handling (`freqtrade/data/`)
-- Exchange abstraction (`freqtrade/exchange/`)
-- Persistence layer (`freqtrade/persistence/`)
-- RPC/API server (`freqtrade/rpc/`)
+### 3.1 Submodule Structure
+The `freqtrade/` directory is a **git submodule** pointing to [mlsys-io/freqtrade](https://github.com/mlsys-io/freqtrade) (forked from upstream freqtrade, commit `ed22b4e`, develop branch). PortfolioBench-specific modifications (exchange subclasses, CLI subcommands, Google Drive data download) live in that fork. The submodule includes:
+- Backtesting engine (`freqtrade/freqtrade/optimize/backtesting.py`)
+- Strategy interface (`freqtrade/freqtrade/strategy/interface.py`)
+- Data handling (`freqtrade/freqtrade/data/`)
+- Exchange abstraction (`freqtrade/freqtrade/exchange/`)
+- Persistence layer (`freqtrade/freqtrade/persistence/`)
+- RPC/API server (`freqtrade/freqtrade/rpc/`)
 
 ### 3.2 Custom Exchange Subclass (Clean Extension)
-Non-crypto asset support is implemented via **`freqtrade/exchange/portfoliobench.py`**, a clean exchange subclass that extends `Binance`. The vendored `freqtrade/exchange/exchange.py` is **unmodified**.
+Non-crypto asset support is implemented via **`freqtrade/freqtrade/exchange/portfoliobench.py`**, a clean exchange subclass that extends `Binance`.
 
 The `Portfoliobench` subclass handles:
 
@@ -107,15 +107,14 @@ The `Portfoliobench` subclass handles:
 
 To use this exchange, set `"exchange": {"name": "portfoliobench"}` in your config.
 
-### 3.3 What Was NOT Modified
+### 3.3 What Was NOT Modified in Upstream freqtrade
 - **Backtesting engine**: Zero changes — all portfolio logic lives in strategy callbacks
 - **Data providers**: Zero changes — pre-downloaded feather files match freqtrade's native format
 - **Strategy interface**: Zero changes — all new strategies implement `IStrategy` cleanly
 - **Configuration system**: Zero changes — uses standard freqtrade JSON config
-- **Exchange base class**: Zero changes — `exchange.py` is unmodified; all custom behavior is in the subclass
 
 ### 3.4 Design Philosophy
-PortfolioBench achieves multi-asset support with **minimal invasiveness**: a clean exchange subclass handles non-crypto tickers, while the vendored freqtrade remains unmodified. All new functionality is added through freqtrade's existing extension points (strategies, callbacks, data format). You can update the vendored freqtrade without re-applying patches.
+PortfolioBench achieves multi-asset support with **minimal invasiveness**: a clean exchange subclass handles non-crypto tickers, and PortfolioBench-specific changes are isolated in a fork of freqtrade (referenced as a git submodule). All new functionality is added through freqtrade's existing extension points (strategies, callbacks, data format).
 
 ---
 

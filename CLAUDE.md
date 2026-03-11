@@ -4,7 +4,7 @@
 PortfolioBench is a multi-asset portfolio benchmarking framework wrapping freqtrade. It extends freqtrade to support US stocks, global indices, and portfolio optimization algorithms beyond cryptocurrency trading.
 
 ## Repository Layout
-- `freqtrade/` — Vendored freqtrade (unmodified; custom behaviour lives in `exchange/portfoliobench.py` and `exchange/polymarket.py`)
+- `freqtrade/` — Git submodule pointing to [mlsys-io/freqtrade](https://github.com/mlsys-io/freqtrade) (PortfolioBench-specific changes live there: `exchange/portfoliobench.py`, `exchange/polymarket.py`, CLI subcommands)
 - `alpha/` — Pluggable alpha-factor interface (`IAlpha`) and implementations (EmaAlpha, RsiAlpha, MacdAlpha, BollingerAlpha, PolymarketAlpha)
 - `strategy/` — Freqtrade `IStrategy` implementations (EmaCross, MacdAdx, Ichimoku, RsiBollinger, StochasticCci, MlpSpeculative, Polymarket strategies)
 - `portfolio/` — Standalone portfolio construction pipeline
@@ -58,7 +58,7 @@ portbench download-data --exchange portfoliobench
 The `Portfoliobench` exchange subclass auto-injects synthetic market entries for any pair not found on the real exchange.
 
 ## Custom Exchange: `Portfoliobench`
-Non-crypto asset support is implemented via a clean exchange subclass at `freqtrade/exchange/portfoliobench.py` (extends `Binance`). It handles:
+Non-crypto asset support is implemented via a clean exchange subclass at `freqtrade/freqtrade/exchange/portfoliobench.py` (extends `Binance`). It handles:
 - Offline-tolerant market loading (5s timeout, 0 retries, graceful fallback)
 - Synthetic market injection for stocks/indices (any pair in the whitelist or CLI)
 - Proper quote-currency convention: crypto uses USDT, stocks/indices use USD
@@ -66,4 +66,11 @@ Non-crypto asset support is implemented via a clean exchange subclass at `freqtr
 - Zero-fee fallback for assets without exchange fee data
 - Default 1x leverage tier for non-crypto assets
 
-The vendored `freqtrade/exchange/exchange.py` is **unmodified** — you can update the vendored freqtrade without re-applying patches. To use this exchange, set `"exchange": {"name": "portfoliobench"}` in your config.
+To use this exchange, set `"exchange": {"name": "portfoliobench"}` in your config.
+
+## Submodule Setup
+After cloning, initialize the freqtrade submodule:
+```bash
+git submodule update --init --recursive
+pip install -e .
+```
