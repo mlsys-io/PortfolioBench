@@ -13,7 +13,7 @@ PortfolioBench is a multi-asset portfolio benchmarking framework wrapping freqtr
 - `benchmark.py` / `benchmark_all.py` — Benchmarking scripts
 - `user_data/strategies/` — Portfolio-optimization strategies (ONS, MinVar, InvVol, BestSingleAsset, ExpGradient, MaxSharpe, RiskParity, Polymarket)
 - `user_data/config.json` — Main backtesting config; `user_data/config_polymarket.json` — Polymarket config
-- `user_data/data/binance/` — Pre-downloaded OHLCV feather files (119 instruments × 3 timeframes = 357 files)
+- `user_data/data/usstock/` — OHLCV feather files downloaded from Google Drive (119 instruments × 3 timeframes = 357 files)
 - `utils/` — Bash scripts for backtesting, data generation, and testing
 
 ## Key Commands
@@ -42,9 +42,14 @@ bash utils/backtest_tests.bash
 3. For portfolio algorithms: implement `IStrategy` with `position_adjustment_enable=True` in `user_data/strategies/`
 
 ## Adding New Assets
-Place feather files in `user_data/data/binance/`:
+Place feather files in `user_data/data/usstock/`:
 - Crypto: `{TICKER}_USDT-{timeframe}.feather` (e.g. `BTC_USDT-1d.feather`)
 - Stocks & indices: `{TICKER}_USD-{timeframe}.feather` (e.g. `AAPL_USD-1d.feather`)
+
+To download the pre-built dataset from Google Drive, run:
+```bash
+bash utils/download_data.sh
+```
 
 The `Portfoliobench` exchange subclass auto-injects synthetic market entries for any pair not found on the real exchange.
 

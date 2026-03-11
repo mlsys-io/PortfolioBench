@@ -16,6 +16,34 @@ PortfolioBench ships with 119 instruments, 16 strategies, 5 alpha factors, and a
 
 ---
 
+## Data Setup
+
+OHLCV data is hosted on Google Drive. Download it before running backtests:
+
+```bash
+pip install gdown
+bash utils/download_data.sh            # downloads both usstock and polymarket data
+bash utils/download_data.sh usstock    # usstock only (crypto + stocks + indices)
+bash utils/download_data.sh polymarket # polymarket only
+```
+
+This places feather files in `user_data/data/usstock/` and `user_data/data/polymarket/`.
+
+For freqtrade backtesting (which reads from `user_data/data/portfoliobench/`), copy the files:
+
+```bash
+mkdir -p user_data/data/portfoliobench
+cp user_data/data/usstock/*.feather user_data/data/portfoliobench/
+```
+
+Alternatively, generate synthetic data for testing without downloading:
+
+```bash
+python utils/generate_test_data.py
+```
+
+---
+
 ## Quick Start
 
 ### 1. Backtest a Trading Strategy
@@ -235,7 +263,7 @@ Implement `IStrategy` with `position_adjustment_enable = True` in `user_data/str
 
 1. Prepare OHLCV data as feather files with columns: `date, open, high, low, close, volume`
 2. Name files: `{TICKER}_USDT-{timeframe}.feather` (crypto) or `{TICKER}_USD-{timeframe}.feather` (stocks/indices)
-3. Place in `user_data/data/binance/`
+3. Place in `user_data/data/usstock/`
 4. Pass via `--pairs` or add to the config whitelist
 
 New tickers are automatically recognized — no exchange configuration needed.
@@ -256,7 +284,7 @@ PortfolioBench/
 ├── benchmark.py               # Benchmarking suite with formatted reports
 ├── benchmark_all.py           # Full benchmark matrix runner
 ├── tests/                     # Unit and integration tests
-├── user_data/data/binance/    # 357 pre-downloaded OHLCV feather files
+├── user_data/data/usstock/    # 357 OHLCV feather files (download from Google Drive)
 └── utils/                     # Bash helpers for backtesting and data generation
 ```
 

@@ -316,7 +316,7 @@ AAPL, MSFT, NVDA, GOOG, AMZN, META, TSLA, JPM, MA, V, UNH, HD, PG, JNJ, LLY, AVG
 DJI (Dow Jones), GSPC (S&P 500), IXIC (Nasdaq), RUT (Russell 2000), FTSE (UK), N225 (Nikkei), HSI (Hang Seng), STOXX50E (Euro Stoxx 50), VIX
 
 ### 8.2 Data Format
-All data stored as feather files in `user_data/data/binance/`:
+All data stored as feather files in `user_data/data/usstock/`:
 - Crypto: `{TICKER}_USDT-{timeframe}.feather` (e.g. `BTC_USDT-1d.feather`)
 - Stocks & indices: `{TICKER}_USD-{timeframe}.feather` (e.g. `AAPL_USD-1d.feather`)
 
@@ -522,7 +522,7 @@ class MyPortfolio(IStrategy):
 
 1. Prepare OHLCV data as feather files with columns: `date, open, high, low, close, volume`
 2. Name files as `{TICKER}_USDT-{timeframe}.feather` (crypto) or `{TICKER}_USD-{timeframe}.feather` (stocks/indices)
-3. Place in `user_data/data/binance/`
+3. Place in `user_data/data/usstock/`
 4. Add pairs to config whitelist or pass via `--pairs` CLI flag
 5. The `Portfoliobench` exchange subclass will auto-inject synthetic market entries
 
