@@ -341,6 +341,75 @@ def run_portfolio_pipeline() -> Dict[str, Any]:
 # PHASE 4 & 5 — FREQTRADE BACKTESTS
 # ═══════════════════════════════════════════════════════════════════════════
 
+def _extract_metrics(bt_results: Any, strategy_name: str) -> Dict[str, Any]:
+    """Extract key performance metrics from a freqtrade backtest result."""
+    metrics: Dict[str, Any] = {}
+    if bt_results is None:
+        return metrics
+
+    try:
+        # Navigate to the strategy-level result dict
+        if isinstance(bt_results, dict) and strategy_name in bt_results:
+            sr = bt_results[strategy_name]
+        elif isinstance(bt_results, dict):
+            first_key = next(iter(bt_results), None)
+            sr = bt_results.get(first_key, bt_results)
+        else:
+            return metrics
+
+        if not isinstance(sr, dict):
+            return metrics
+
+        # Collect all candidate sub-dicts
+        candidates = [sr]
+        for sub_key in ["results_per_pair", "results", "strategy_comparison",
+                        "backtest_results", "backtest_result"]:
+            sub = sr.get(sub_key)
+            if isinstance(sub, dict):
+                candidates.append(sub)
+            elif isinstance(sub, list):
+                for entry in sub:
+                    if isinstance(entry, dict):
+                        candidates.append(entry)
+
+        # Search for common metric keys across all candidates
+        _METRIC_MAP = {
+            "trade_count": ("trades", None),
+            "profit_total": ("total_return_pct", lambda v: round(v * 100, 2)),
+            "profit_total_abs": ("profit_abs", lambda v: round(v, 2)),
+            "max_drawdown": ("max_drawdown_pct", lambda v: round(v * 100, 2)),
+            "max_drawdown_account": ("max_drawdown_pct", lambda v: round(v * 100, 2)),
+            "sharpe": ("sharpe", lambda v: round(v, 4)),
+            "sharpe_ratio": ("sharpe", lambda v: round(v, 4)),
+            "sortino": ("sortino", lambda v: round(v, 4)),
+            "sortino_ratio": ("sortino", lambda v: round(v, 4)),
+            "calmar": ("calmar", lambda v: round(v, 4)),
+            "win_rate": ("win_rate_pct", lambda v: round(v * 100, 2)),
+            "profit_factor": ("profit_factor", lambda v: round(v, 4)),
+            "profit_mean": ("avg_profit_pct", lambda v: round(v * 100, 2)),
+            "holding_avg": ("avg_duration", str),
+            "duration_avg": ("avg_duration", str),
+        }
+
+        for d in candidates:
+            for src_key, (dst_key, transform) in _METRIC_MAP.items():
+                if dst_key in metrics:
+                    continue
+                val = d.get(src_key)
+                if val is not None:
+                    metrics[dst_key] = transform(val) if transform else val
+
+        # Fallback: compute from trades DataFrame
+        if "trades" not in metrics:
+            trades_df = sr.get("trades")
+            if trades_df is not None and hasattr(trades_df, "__len__"):
+                metrics["trades"] = len(trades_df)
+
+    except Exception:
+        pass
+    return metrics
+
+
 def _run_single_backtest(
     strategy_name: str,
     strategy_path: str,
@@ -370,10 +439,10 @@ def _run_single_backtest(
     backtesting = Backtesting(config)
 
     try:
-        res = backtesting.start()
-        # Extract results from backtesting object
-        stats = backtesting.results
-        return {"status": "ok", "stats": stats}
+        bt_results = backtesting.start()
+        # Extract key metrics from the result dict
+        metrics = _extract_metrics(bt_results, strategy_name)
+        return {"status": "ok", "metrics": metrics}
     finally:
         if backtesting.exchange:
             backtesting.exchange.close()
@@ -419,7 +488,17 @@ def run_freqtrade_backtests(
                         wallet=wallet,
                     )
                     dt = time.time() - t0
+                    m = result.get("metrics", {})
                     ok(f"Completed in {elapsed_str(dt)}")
+                    if m.get("total_return_pct") is not None:
+                        ret_color = C.GREEN if m["total_return_pct"] >= 0 else C.RED
+                        info(
+                            f"Return: {ret_color}{m['total_return_pct']:+.2f}%{C.RESET}  "
+                            f"Sharpe: {m.get('sharpe', 'N/A')}  "
+                            f"DD: {m.get('max_drawdown_pct', 'N/A')}%  "
+                            f"Trades: {m.get('trades', 'N/A')}  "
+                            f"Win: {m.get('win_rate_pct', 'N/A')}%"
+                        )
                     results["passed"] += 1
                     results["backtest_results"].append({
                         "strategy": strat,
@@ -427,6 +506,7 @@ def run_freqtrade_backtests(
                         "timeframe": tf,
                         "duration_s": round(dt, 1),
                         "status": "pass",
+                        "metrics": m,
                     })
                 except Exception as e:
                     dt = time.time() - t0
@@ -530,24 +610,30 @@ def print_summary_report(
         for r in bt_results:
             lookup[(r["strategy"], r["category"], r["timeframe"])] = r
 
-        # Print a compact grid per timeframe
+        # Print a compact grid per timeframe showing return %
         for tf in tfs:
             print(f"  {C.BOLD}Timeframe: {tf}{C.RESET}")
-            cat_header = "".join(f"{c:>10}" for c in cats)
+            cat_header = "".join(f"{c:>12}" for c in cats)
             print(f"  {'Strategy':<35}{cat_header}")
-            print(f"  {'─' * (35 + 10 * len(cats))}")
+            print(f"  {'─' * (35 + 12 * len(cats))}")
 
             for strat in strats:
                 row = f"  {strat:<35}"
                 for cat in cats:
                     r = lookup.get((strat, cat, tf))
                     if r is None:
-                        row += f"{'—':>10}"
+                        row += f"{'—':>12}"
                     elif r["status"] == "pass":
-                        t = f"{r['duration_s']}s"
-                        row += f"{C.GREEN}{t:>10}{C.RESET}"
+                        m = r.get("metrics", {})
+                        ret = m.get("total_return_pct")
+                        if ret is not None:
+                            color = C.GREEN if ret >= 0 else C.RED
+                            row += f"{color}{ret:>+11.2f}%{C.RESET}"
+                        else:
+                            t = f"{r['duration_s']}s"
+                            row += f"{C.GREEN}{t:>12}{C.RESET}"
                     else:
-                        row += f"{C.RED}{'FAIL':>10}{C.RESET}"
+                        row += f"{C.RED}{'FAIL':>12}{C.RESET}"
                 print(row)
             print()
 
@@ -667,16 +753,27 @@ def main():
             "phases": {},
         }
         for name, res in phase_results.items():
-            json_data["phases"][name] = {
+            phase_data: Dict[str, Any] = {
                 "passed": res.get("passed", 0),
                 "failed": res.get("failed", 0),
                 "skipped": res.get("skipped", 0),
                 "details": res.get("details", []),
             }
             if "metrics" in res:
-                json_data["phases"][name]["metrics"] = res["metrics"]
+                phase_data["metrics"] = res["metrics"]
             if "backtest_results" in res:
-                json_data["phases"][name]["backtest_results"] = res["backtest_results"]
+                # Ensure metrics are serializable (no DataFrames)
+                clean_results = []
+                for bt in res["backtest_results"]:
+                    entry = {k: v for k, v in bt.items() if k != "metrics"}
+                    m = bt.get("metrics", {})
+                    entry["metrics"] = {
+                        k: (round(v, 6) if isinstance(v, float) else v)
+                        for k, v in m.items()
+                    }
+                    clean_results.append(entry)
+                phase_data["backtest_results"] = clean_results
+            json_data["phases"][name] = phase_data
 
         with open(args.json_output, "w") as f:
             json.dump(json_data, f, indent=2)
