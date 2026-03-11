@@ -119,18 +119,29 @@ jobs:
           pip install scipy pytest gdown
           pip install -e .
 
-      # ── Download real data from Google Drive ──
+      # ── Benchmark data (cached) ──
+      - name: Cache benchmark data
+        id: cache-data
+        uses: actions/cache@v4
+        with:
+          path: |
+            user_data/data/usstock
+            user_data/data/portfoliobench
+          key: benchmark-data-portfoliobench-v1
+
+      # ── Download real data from Google Drive (skip if cached) ──
       - name: Download data from Google Drive
         id: download-data
+        if: steps.cache-data.outputs.cache-hit != 'true'
         run: |
           python utils/download_data.py --exchange portfoliobench
         continue-on-error: true
 
-      # ── Fallback: generate synthetic data if download fails ──
+      # ── Fallback: generate synthetic data if download fails and no cache ──
       - name: Fallback to synthetic data
-        if: steps.download-data.outcome == 'failure'
+        if: steps.cache-data.outputs.cache-hit != 'true' && steps.download-data.outcome == 'failure'
         run: |
-          echo "Google Drive download failed — falling back to synthetic data"
+          echo "Google Drive download failed and no cache available — falling back to synthetic data"
           portbench generate-data
 
       # ── Determine benchmark flags ──
