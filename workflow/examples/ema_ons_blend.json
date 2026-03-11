@@ -1,0 +1,49 @@
+{
+  "apiVersion": "lumid/v1",
+  "kind": "Workflow",
+  "metadata": {
+    "name": "ema-ons-blend",
+    "annotations": {
+      "description": "Default pipeline: EMA alpha, EMA-cross strategy, blended ONS+equal+signal portfolio."
+    }
+  },
+  "spec": {
+    "stages": {
+      "alpha": {
+        "template": "portbench.alpha",
+        "params": {
+          "type": "ema"
+        }
+      },
+      "strategy": {
+        "template": "portbench.strategy",
+        "dependsOn": ["alpha"],
+        "params": {
+          "type": "ema_cross"
+        }
+      },
+      "portfolio": {
+        "template": "portbench.portfolio",
+        "dependsOn": ["strategy"],
+        "params": {
+          "type": "blend",
+          "ons": {
+            "eta": 0.0,
+            "beta": 1.0,
+            "delta": 0.125
+          },
+          "blend_weights": {
+            "equal": 0.34,
+            "ons": 0.33,
+            "signal": 0.33
+          }
+        }
+      }
+    },
+    "backtest": {
+      "pairs": ["BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT", "MSFT/USD"],
+      "timeframe": "1d",
+      "initial_capital": 10000
+    }
+  }
+}

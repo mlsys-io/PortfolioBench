@@ -1,0 +1,16 @@
+{
+  "template": "portbench.portfolio",
+  "params": {
+    "type": "blend",
+    "ons": {
+      "eta": 0.0,
+      "beta": 1.0,
+      "delta": 0.125
+    },
+    "blend_weights": {
+      "equal": 0.34,
+      "ons": 0.33,
+      "signal": 0.33
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "apiVersion": "lumid/v1",
+  "kind": "Workflow",
+  "metadata": {
+    "name": "rsi-equal-weight",
+    "annotations": {
+      "description": "RSI alpha with RSI-based signals and simple equal-weight portfolio."
+    }
+  },
+  "spec": {
+    "stages": {
+      "alpha": {
+        "template": "portbench.alpha",
+        "params": {
+          "type": "rsi"
+        }
+      },
+      "strategy": {
+        "template": "portbench.strategy",
+        "dependsOn": ["alpha"],
+        "params": {
+          "type": "rsi"
+        }
+      },
+      "portfolio": {
+        "template": "portbench.portfolio",
+        "dependsOn": ["strategy"],
+        "params": {
+          "type": "equal"
+        }
+      }
+    },
+    "backtest": {
+      "pairs": ["BTC/USDT", "ETH/USDT"],
+      "timeframe": "1d",
+      "initial_capital": 10000
+    }
+  }
+}

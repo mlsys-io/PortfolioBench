@@ -1,0 +1,6 @@
+{
+  "template": "portbench.portfolio",
+  "params": {
+    "type": "equal"
+  }
+}

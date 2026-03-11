@@ -1,0 +1,11 @@
+{
+  "template": "portbench.portfolio",
+  "params": {
+    "type": "ons",
+    "ons": {
+      "eta": 0.0,
+      "beta": 1.0,
+      "delta": 0.125
+    }
+  }
+}
