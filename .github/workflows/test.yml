@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main, develop]
 
+env:
+  GIT_LFS_SKIP_SMUDGE: "1"
+
 jobs:
   # ---------------------------------------------------------------------------
   # Job 1: Lint & import checks (fast, no data needed)
@@ -15,6 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: false
 
       - uses: actions/setup-python@v5
         with:
@@ -37,6 +42,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: false
 
       - uses: actions/setup-python@v5
         with:
@@ -75,6 +82,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: false
 
       - uses: actions/setup-python@v5
         with:
@@ -180,6 +189,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: false
 
       - uses: actions/setup-python@v5
         with:
@@ -218,6 +229,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: false
 
       - uses: actions/setup-python@v5
         with:

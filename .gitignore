@@ -12,6 +12,8 @@ user_data/*
 !user_data/models
 !user_data/freqaimodels
 !user_data/data/
+# Synthetic data generated at test time (not LFS-tracked)
+user_data/data/portfoliobench/
 user_data/freqaimodels/*
 user_data/models/*
 user_data/notebooks/*
