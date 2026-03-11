@@ -21,6 +21,7 @@ import shutil
 import sys
 import tarfile
 import tempfile
+import time
 from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -49,8 +50,12 @@ GDRIVE_FILES = {
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
-def download_from_gdrive(folder_id: str, output_path: str) -> bool:
-    """Download a folder from Google Drive using gdown."""
+def download_from_gdrive(folder_id: str, output_path: str, max_retries: int = 4) -> bool:
+    """Download a folder from Google Drive using gdown.
+
+    Retries with exponential backoff (2s, 4s, 8s, 16s) on failure to handle
+    transient Google Drive rate-limiting and permission errors.
+    """
     try:
         import gdown
     except ImportError:
@@ -60,18 +65,36 @@ def download_from_gdrive(folder_id: str, output_path: str) -> bool:
         return False
 
     url = f"https://drive.google.com/drive/folders/{folder_id}"
-    logger.info("Downloading from Google Drive folder (folder_id=%s)...", folder_id)
 
-    try:
-        gdown.download_folder(url, output=output_path, quiet=False)
-        if os.path.isdir(output_path) and os.listdir(output_path):
-            logger.info("Download complete: %s", output_path)
-            return True
-        logger.error("Download produced empty or missing directory")
-        return False
-    except Exception as e:
-        logger.error("Download failed: %s", e)
-        return False
+    for attempt in range(1, max_retries + 1):
+        logger.info(
+            "Downloading from Google Drive folder (folder_id=%s) [attempt %d/%d]...",
+            folder_id, attempt, max_retries,
+        )
+
+        try:
+            # Clean output dir before each attempt to avoid partial state
+            if os.path.isdir(output_path):
+                shutil.rmtree(output_path)
+            os.makedirs(output_path, exist_ok=True)
+
+            gdown.download_folder(url, output=output_path, quiet=False)
+            if os.path.isdir(output_path) and os.listdir(output_path):
+                logger.info("Download complete: %s", output_path)
+                return True
+            logger.warning("Download produced empty or missing directory")
+        except Exception as e:
+            logger.warning("Download attempt %d failed: %s", attempt, e)
+
+        if attempt < max_retries:
+            wait = 2 ** attempt  # 2, 4, 8, 16 seconds
+            logger.info("Retrying in %ds...", wait)
+            time.sleep(wait)
+
+    logger.error(
+        "All %d download attempts failed for folder_id=%s", max_retries, folder_id
+    )
+    return False
 
 
 def extract_archive(archive_path: str, dest_dirs: list[str]) -> int:
