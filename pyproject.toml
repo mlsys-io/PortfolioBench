@@ -1,0 +1,205 @@
+[build-system]
+requires = ["setuptools >= 64.0.0, <75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "portfoliobench"
+version = "0.1.0"
+
+authors = [
+  {name = "MLSys Team"},
+]
+
+description = "Multi-asset portfolio benchmarking framework for backtesting trading strategies and portfolio algorithms"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "GPLv3"}
+classifiers = [
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Operating System :: MacOS",
+    "Operating System :: Unix",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+
+dependencies = [
+  # from requirements.txt
+  "ccxt>=4.5.4",
+  "SQLAlchemy>=2.0.6",
+  "python-telegram-bot>=20.1",
+  "humanize>=4.0.0",
+  "cachetools",
+  "requests",
+  "httpx>=0.24.1",
+  "urllib3",
+  "jsonschema",
+  "numpy>2.0,<3.0",
+  "pandas>=2.2.0,<3.0",
+  "TA-Lib<0.7",
+  "ft-pandas-ta",
+  "technical",
+  "tabulate",
+  "pycoingecko>=3.2.0",
+  "python-rapidjson",
+  "orjson",
+  "jinja2",
+  "questionary",
+  "prompt-toolkit",
+  "joblib>=1.2.0",
+  "rich",
+  'pyarrow; platform_machine != "armv7l"',
+  "fastapi",
+  "pydantic>=2.2.0",
+  "pyjwt",
+  "websockets",
+  "uvicorn",
+  "psutil",
+  "schedule",
+  "janus",
+  "ast-comments",
+  "aiofiles",
+  "aiohttp",
+  "cryptography",
+  "sdnotify",
+  "python-dateutil",
+  "pytz",
+  "packaging",
+  "freqtrade-client",
+  #from requirements-ml.txt
+  "absl-py==2.4.0",
+  "annotated-doc==0.0.4",
+  "astunparse==1.6.3",
+  "beautifulsoup4==4.14.3",
+  "flatbuffers==25.12.19",
+  "gast==0.7.0",
+  "gdown==5.2.1",
+  "google-pasta==0.2.0",
+  "h5py==3.14.0",
+  "keras==3.13.2",
+  "libclang==18.1.1",
+  "markdown-it-py==4.0.0",
+  "MarkupSafe==3.0.3",
+  "mdurl==0.1.2",
+  "ml_dtypes==0.5.4",
+  "opt_einsum==3.4.0",
+  "optree==0.19.0",
+  "propcache==0.4.1",
+  "protobuf==7.34.0",
+  "PySocks==1.7.1",
+  "scikit-learn==1.8.0",
+  "scipy==1.17.1",
+  "six==1.17.0",
+  "soupsieve==2.8.3",
+  "tensorflow==2.21.0",
+  "termcolor==3.3.0",
+  "threadpoolctl==3.6.0",
+  "tqdm==4.67.3",
+  "typing-inspection==0.4.2",
+  "typing_extensions==4.15.0",
+  "tzdata==2025.3",
+  "wrapt==2.1.2",
+]
+
+[project.optional-dependencies]
+hyperopt = [
+  "scipy",
+  "scikit-learn",
+  "optuna > 4.0.0",
+  "cmaes",
+  "filelock",
+]
+develop = [
+  "pytest-asyncio",
+  "pytest-cov",
+  "pytest-mock",
+  "pytest",
+  "ruff",
+]
+dev = [
+  "portfoliobench[hyperopt,develop]",
+]
+
+[project.urls]
+Homepage = "https://github.com/mlsys-io/PortfolioBench"
+"Bug Tracker" = "https://github.com/mlsys-io/PortfolioBench/issues"
+
+
+[project.scripts]
+portbench = "cli:main"
+strategy_test = "utils.test:main"
+
+
+[tool.setuptools]
+include-package-data = true
+zip-safe = false
+py-modules = ["cli"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["freqtrade*", "dataset*", "portfolio*", "strategy*", "alpha*", "utils*", "workflow*", "adapters*"]
+exclude = ["tests", "tests.*", "freqtrade.tests", "freqtrade.tests.*", "user_data", "user_data*"]
+namespaces = false
+
+[tool.pytest.ini_options]
+log_format = "%(asctime)s %(levelname)s %(message)s"
+log_date_format = "%Y-%m-%d %H:%M:%S"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+line-length = 100
+extend-exclude = [".env", ".venv"]
+
+[tool.ruff.lint]
+extend-select = [
+  "C90",    # mccabe
+  "B",      # bugbear
+  # "N",    # pep8-naming
+  "F",      # pyflakes
+  "E",      # pycodestyle
+  "W",      # pycodestyle
+  "UP",     # pyupgrade
+  "I",      # isort
+  "A",      # flake8-builtins
+  "TID",    # flake8-tidy-imports
+  # "EXE",  # flake8-executable
+  # "C4",     # flake8-comprehensions
+  "YTT",    # flake8-2020
+  "S",      # flake8-bandit
+  # "DTZ",  # flake8-datetimez
+  # "RSE",  # flake8-raise
+  # "TCH",  # flake8-type-checking
+  "PTH",    # flake8-use-pathlib
+  "RUF",    # ruff
+  "ASYNC",  # flake8-async
+  "NPY",    # numpy
+]
+
+extend-ignore = [
+  "E241",  # Multiple spaces after comma
+  "E272",  # Multiple spaces before keyword
+  "E221",  # Multiple spaces before operator
+  "B007",  # Loop control variable not used
+  "B904",  # BugBear - except raise from
+  "S603",  # `subprocess` call: check for execution of untrusted input
+  "S607",  # Starting a process with a partial executable path
+  "S608",  # Possible SQL injection vector through string-based query construction
+  "NPY002",  # Numpy legacy random generator
+  "RUF010",  # Use explicit conversion flag
+  "RUF012",  # mutable-class-default
+  "RUF022",  # unsorted-dunder-all
+  "RUF005",  # list concatenation
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**.py" = [
+  "S101",  # allow assert in tests
+]

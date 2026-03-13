@@ -1,0 +1,227 @@
+name: Benchmark Report
+
+on:
+  # Manual trigger with options
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Benchmark mode'
+        required: true
+        default: 'quick'
+        type: choice
+        options:
+          - quick
+          - full
+          - trading-only
+          - portfolio-only
+      publish:
+        description: 'Publish report to GitHub Pages'
+        required: false
+        default: true
+        type: boolean
+
+  # Run on pushes to main/develop (quick mode)
+  push:
+    branches: [main, develop]
+    paths:
+      - 'benchmark.py'
+      - 'benchmark_all.py'
+      - 'strategy/**'
+      - 'user_data/strategies/**'
+      - 'alpha/**'
+      - 'portfolio/**'
+
+  # Scheduled weekly run (full mode)
+  schedule:
+    - cron: '0 6 * * 1'  # Every Monday at 06:00 UTC
+
+# Only allow one benchmark run at a time
+concurrency:
+  group: benchmark-report-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GIT_LFS_SKIP_SMUDGE: "1"
+  TALIB_VERSION: "0.6.4"
+  TALIB_CACHE_VERSION: "1"
+  PYTHON_VERSION: "3.11"
+
+# Required for GitHub Pages deployment
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  benchmark:
+    name: Run Benchmark & Generate Report
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          lfs: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      # ── TA-Lib (cached) ──
+      - name: Cache TA-Lib
+        id: cache-talib
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/lib/libta_lib*
+            /usr/include/ta-lib/
+            /usr/include/ta_*.h
+          key: talib-${{ env.TALIB_VERSION }}-${{ runner.os }}-v${{ env.TALIB_CACHE_VERSION }}
+
+      - name: Verify TA-Lib cache
+        id: verify-talib
+        run: |
+          if [ -f /usr/lib/libta_lib.so ] || [ -f /usr/lib/libta_lib.a ]; then
+            echo "installed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "installed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build TA-Lib from source
+        if: steps.verify-talib.outputs.installed != 'true'
+        run: |
+          sudo apt-get update && sudo apt-get install -y build-essential wget
+          wget https://github.com/ta-lib/ta-lib/releases/download/v${{ env.TALIB_VERSION }}/ta-lib-${{ env.TALIB_VERSION }}-src.tar.gz
+          tar -xzf ta-lib-${{ env.TALIB_VERSION }}-src.tar.gz
+          cd ta-lib-${{ env.TALIB_VERSION }}
+          ./configure --prefix=/usr
+          make -j$(nproc)
+          sudo make install
+
+      - name: Refresh linker cache
+        run: sudo ldconfig
+
+      # ── Python dependencies (cached) ──
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ env.PYTHON_VERSION }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: pip-${{ env.PYTHON_VERSION }}-
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip "setuptools<75" wheel
+          pip install -r requirements.txt
+          pip install scipy pytest gdown
+          pip install -e .
+
+      # ── Benchmark data (cached) ──
+      - name: Cache benchmark data
+        id: cache-data
+        uses: actions/cache@v4
+        with:
+          path: |
+            user_data/data/usstock
+            user_data/data/portfoliobench
+          key: benchmark-data-portfoliobench-v2
+
+      # ── Download real data from Google Drive (skip if cached) ──
+      - name: Download data from Google Drive
+        id: download-data
+        if: steps.cache-data.outputs.cache-hit != 'true'
+        timeout-minutes: 10
+        run: |
+          python utils/download_data.py --exchange portfoliobench
+        continue-on-error: true
+
+      # ── Fallback: generate synthetic data if download fails and no cache ──
+      - name: Fallback to synthetic data
+        if: steps.cache-data.outputs.cache-hit != 'true' && steps.download-data.outcome == 'failure'
+        run: |
+          echo "Google Drive download failed and no cache available — falling back to synthetic data"
+          portbench generate-data
+
+      # ── Determine benchmark flags ──
+      - name: Determine benchmark mode
+        id: mode
+        run: |
+          MODE="${{ github.event.inputs.mode || 'quick' }}"
+          # Scheduled runs use full mode
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            MODE="full"
+          fi
+
+          FLAGS=""
+          case "$MODE" in
+            quick)          FLAGS="--quick" ;;
+            full)           FLAGS="" ;;
+            trading-only)   FLAGS="--trading-only" ;;
+            portfolio-only) FLAGS="--portfolio-only" ;;
+          esac
+
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "flags=$FLAGS" >> "$GITHUB_OUTPUT"
+          echo "Benchmark mode: $MODE (flags: $FLAGS)"
+
+      # ── Run benchmark ──
+      - name: Run benchmark
+        run: |
+          python benchmark.py ${{ steps.mode.outputs.flags }} --export benchmark_results.json || true
+          echo "Benchmark completed (exit code ignored for report generation)"
+
+      # ── Generate HTML report ──
+      - name: Generate HTML report
+        run: |
+          python generate_report.py benchmark_results.json -o benchmark_report.html
+          echo "HTML report generated successfully"
+
+      # ── Create report directory for Pages ──
+      - name: Prepare report artifact
+        run: |
+          mkdir -p report
+          cp benchmark_report.html report/index.html
+          cp benchmark_results.json report/benchmark_results.json
+
+          # Generate a simple redirect for /benchmark path
+          cat > report/404.html << 'REDIRECT'
+          <!DOCTYPE html>
+          <html>
+          <head><meta http-equiv="refresh" content="0;url=index.html"></head>
+          <body><a href="index.html">View Report</a></body>
+          </html>
+          REDIRECT
+
+      # ── Upload as build artifact (always) ──
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-report
+          path: report/
+          retention-days: 30
+
+      # ── Upload as Pages artifact (for deployment) ──
+      - name: Upload Pages artifact
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.publish != 'false'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: report/
+
+  # ── Deploy to GitHub Pages ──
+  deploy:
+    name: Deploy Report to GitHub Pages
+    needs: benchmark
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.publish != 'false'
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
