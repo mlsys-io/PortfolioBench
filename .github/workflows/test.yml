@@ -376,6 +376,8 @@ jobs:
       - name: Generate synthetic test data
         run: portbench generate-data
 
+      # ── Trading strategies ──
+
       - name: Backtest EmaCrossStrategy (crypto, 1d)
         run: |
           portbench backtesting \
@@ -384,6 +386,15 @@ jobs:
             --timeframe 1d \
             --timerange 20250501-20250601 \
             --pairs BTC/USDT ETH/USDT
+
+      - name: Backtest EmaCrossStrategy (crypto, 4h)
+        run: |
+          portbench backtesting \
+            --strategy EmaCrossStrategy \
+            --strategy-path ./strategy \
+            --timeframe 4h \
+            --timerange 20250501-20250601 \
+            --pairs BTC/USDT ETH/USDT SOL/USDT XRP/USDT
 
       - name: Backtest MacdAdxStrategy (stocks, 1d)
         run: |
@@ -394,6 +405,53 @@ jobs:
             --timerange 20250501-20250601 \
             --pairs AAPL/USD MSFT/USD
 
+      - name: Backtest RsiBollingerStrategy (stocks, 4h)
+        run: |
+          portbench backtesting \
+            --strategy RsiBollingerStrategy \
+            --strategy-path ./strategy \
+            --timeframe 4h \
+            --timerange 20250501-20250601 \
+            --pairs AAPL/USD MSFT/USD NVDA/USD GOOG/USD
+
+      - name: Backtest IchimokuCloudStrategy (crypto, 1d)
+        run: |
+          portbench backtesting \
+            --strategy IchimokuCloudStrategy \
+            --strategy-path ./strategy \
+            --timeframe 1d \
+            --timerange 20250501-20250601 \
+            --pairs BTC/USDT ETH/USDT
+
+      - name: Backtest StochasticCciStrategy (stocks, 1d)
+        run: |
+          portbench backtesting \
+            --strategy StochasticCciStrategy \
+            --strategy-path ./strategy \
+            --timeframe 1d \
+            --timerange 20250501-20250601 \
+            --pairs AAPL/USD MSFT/USD
+
+      - name: Backtest EmaCrossStrategy (indices, 1d)
+        run: |
+          portbench backtesting \
+            --strategy EmaCrossStrategy \
+            --strategy-path ./strategy \
+            --timeframe 1d \
+            --timerange 20250501-20250601 \
+            --pairs DJI/USD FTSE/USD GSPC/USD
+
+      - name: Backtest MacdAdxStrategy (mixed assets, 1d)
+        run: |
+          portbench backtesting \
+            --strategy MacdAdxStrategy \
+            --strategy-path ./strategy \
+            --timeframe 1d \
+            --timerange 20250501-20250601 \
+            --pairs BTC/USDT ETH/USDT AAPL/USD MSFT/USD DJI/USD
+
+      # ── Portfolio strategies ──
+
       - name: Backtest ONS_Portfolio (mixed, 5m, short range)
         run: |
           portbench backtesting \
@@ -402,4 +460,84 @@ jobs:
             --timeframe 5m \
             --timerange 20260101-20260103 \
             --pairs BTC/USDT ETH/USDT AAPL/USD \
+            --dry-run-wallet 1000000
+
+      - name: Backtest ONS_Portfolio (crypto, 4h)
+        run: |
+          portbench backtesting \
+            --strategy ONS_Portfolio \
+            --strategy-path ./user_data/strategies \
+            --timeframe 4h \
+            --timerange 20260101-20260131 \
+            --pairs BTC/USDT ETH/USDT SOL/USDT XRP/USDT \
+            --dry-run-wallet 1000000
+
+      - name: Backtest InverseVolatilityPortfolio (stocks, 5m)
+        run: |
+          portbench backtesting \
+            --strategy InverseVolatilityPortfolio \
+            --strategy-path ./user_data/strategies \
+            --timeframe 5m \
+            --timerange 20260101-20260103 \
+            --pairs AAPL/USD MSFT/USD NVDA/USD GOOG/USD \
+            --dry-run-wallet 1000000
+
+      - name: Backtest MinimumVariancePortfolio (crypto, 5m)
+        run: |
+          portbench backtesting \
+            --strategy MinimumVariancePortfolio \
+            --strategy-path ./user_data/strategies \
+            --timeframe 5m \
+            --timerange 20260101-20260103 \
+            --pairs BTC/USDT ETH/USDT SOL/USDT \
+            --dry-run-wallet 1000000
+
+      - name: Backtest BestSingleAssetPortfolio (stocks, 1d)
+        run: |
+          portbench backtesting \
+            --strategy BestSingleAssetPortfolio \
+            --strategy-path ./user_data/strategies \
+            --timeframe 1d \
+            --timerange 20240101-20260131 \
+            --pairs AAPL/USD MSFT/USD NVDA/USD GOOG/USD \
+            --dry-run-wallet 1000000
+
+      - name: Backtest ExponentialGradientPortfolio (mixed, 5m)
+        run: |
+          portbench backtesting \
+            --strategy ExponentialGradientPortfolio \
+            --strategy-path ./user_data/strategies \
+            --timeframe 5m \
+            --timerange 20260101-20260103 \
+            --pairs BTC/USDT ETH/USDT AAPL/USD DJI/USD \
+            --dry-run-wallet 1000000
+
+      - name: Backtest MaxSharpePortfolio (crypto, 5m)
+        run: |
+          portbench backtesting \
+            --strategy MaxSharpePortfolio \
+            --strategy-path ./user_data/strategies \
+            --timeframe 5m \
+            --timerange 20260101-20260103 \
+            --pairs BTC/USDT ETH/USDT SOL/USDT XRP/USDT \
+            --dry-run-wallet 1000000
+
+      - name: Backtest RiskParityPortfolio (indices, 1d)
+        run: |
+          portbench backtesting \
+            --strategy RiskParityPortfolio \
+            --strategy-path ./user_data/strategies \
+            --timeframe 1d \
+            --timerange 20240101-20260131 \
+            --pairs DJI/USD FTSE/USD GSPC/USD \
+            --dry-run-wallet 1000000
+
+      - name: Backtest ONS_Portfolio (indices, 4h)
+        run: |
+          portbench backtesting \
+            --strategy ONS_Portfolio \
+            --strategy-path ./user_data/strategies \
+            --timeframe 4h \
+            --timerange 20260101-20260131 \
+            --pairs DJI/USD FTSE/USD GSPC/USD \
             --dry-run-wallet 1000000
