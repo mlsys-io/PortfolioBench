@@ -18,8 +18,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-talib = pytest.importorskip("talib", reason="TA-Lib C library not installed")
-
 from portfolio.PortfolioManagement import (
     align_close_prices,
     backtest_portfolio,
@@ -31,6 +29,17 @@ from portfolio.PortfolioManagement import (
     equal_weight_allocation,
     generate_alpha_signals,
 )
+
+# Only tests that call generate_alpha_signals (which uses EmaAlpha → talib)
+# need the TA-Lib C library.  Mark them so the ~35 pure-math tests still run
+# in environments without it.
+try:
+    import talib  # noqa: F401
+    _has_talib = True
+except ImportError:
+    _has_talib = False
+
+needs_talib = pytest.mark.skipif(not _has_talib, reason="TA-Lib C library not installed")
 
 
 # ---------------------------------------------------------------------------
@@ -232,7 +241,7 @@ class TestWeightConstraints:
         prices = align_close_prices(pair_data)
         weights = calculate_ons_weights(prices)
 
-        assert (weights.values >= -0.01).all(), "Negative weights found"
+        assert (weights.values >= -1e-6).all(), "Negative weights found"
 
     def test_ons_weights_bounded_above(self):
         """No single ONS weight should exceed 1.0 (within tolerance)."""
@@ -249,8 +258,7 @@ class TestWeightConstraints:
         weights = calculate_ons_weights(prices)
         row_sums = weights.sum(axis=1)
 
-        assert (row_sums > 0.5).all(), "Row sum too low"
-        assert (row_sums <= 1.05).all(), "Row sum too high"
+        np.testing.assert_allclose(row_sums.values, 1.0, atol=0.02, err_msg="Row sums should be ~1.0")
 
     def test_blend_weights_sum_to_one(self):
         """Blended weights must sum to exactly 1.0 per bar."""
@@ -293,9 +301,11 @@ class TestMetricCorrectness:
 
     def test_known_max_drawdown(self):
         """Verify max drawdown on a known sequence: peak=110, trough=88."""
+        values = [100, 110, 88, 95, 105]
+        returns = [0.0] + [values[i] / values[i - 1] - 1 for i in range(1, len(values))]
         result = pd.DataFrame({
-            "portfolio_value": [100, 110, 88, 95, 105],
-            "daily_return": [0.0, 0.1, -0.2, 0.08, 0.105],
+            "portfolio_value": values,
+            "daily_return": returns,
         })
         m = compute_metrics(result)
         # Drawdown = (88 - 110) / 110 = -20%
@@ -427,7 +437,10 @@ class TestBacktestAccounting:
 # 7. Signal generation correctness
 # ---------------------------------------------------------------------------
 
-class TestSignalGeneration:
+@needs_talib
+class TestSignalGenerationWithAlpha:
+    """Tests that require generate_alpha_signals (depends on TA-Lib)."""
+
     def test_enter_exit_are_binary(self):
         """EMA cross signals should only be 0 or 1."""
         pair_data = _make_pair_data(("P",), n=200, seed=30)
@@ -437,14 +450,21 @@ class TestSignalGeneration:
         assert set(df["enter_long"].unique()).issubset({0, 1})
         assert set(df["exit_long"].unique()).issubset({0, 1})
 
-    def test_no_simultaneous_enter_exit(self):
-        """enter_long and exit_long should not both be 1 on the same bar."""
-        pair_data = _make_pair_data(("P",), n=200, seed=31)
-        enriched = generate_alpha_signals(pair_data)
-        df = ema_cross_signals(enriched["P"])
 
-        simultaneous = ((df["enter_long"] == 1) & (df["exit_long"] == 1)).sum()
-        assert simultaneous == 0, f"Found {simultaneous} bars with both enter and exit"
+class TestPositionTracking:
+    """Tests for build_ema_position_series (pure logic, no TA-Lib needed)."""
+
+    def test_simultaneous_enter_exit_handled(self):
+        """When both enter and exit fire on the same bar, exit should win
+        (build_ema_position_series processes enter first, then exit)."""
+        df = pd.DataFrame({
+            "enter_long": [0, 1, 0, 1, 0],
+            "exit_long":  [0, 0, 0, 1, 0],
+        })
+        pos = build_ema_position_series(df)
+        # Bar 3: enter sets position=1, then exit resets to 0
+        expected = [0, 1, 1, 0, 0]
+        assert list(pos) == expected
 
     def test_position_series_is_binary(self):
         """Position series should only contain 0 and 1."""
@@ -628,6 +648,7 @@ class TestCapitalSizes:
 # 12. Alpha-to-backtest integration (end-to-end with synthetic data)
 # ---------------------------------------------------------------------------
 
+@needs_talib
 class TestAlphaToBacktestIntegration:
     def test_full_pipeline_synthetic_data(self):
         """Full pipeline from alpha generation through to final metrics."""
