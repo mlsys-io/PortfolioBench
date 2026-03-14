@@ -31,7 +31,8 @@ _FT_ROOT = os.path.join(PROJECT_ROOT, "freqtrade")
 if os.path.isdir(os.path.join(_FT_ROOT, "freqtrade")) and _FT_ROOT not in sys.path:
     sys.path.insert(0, _FT_ROOT)
 
-from alpha.SimpleEmaFactors import EmaAlpha  # reuse existing alpha factor
+# EmaAlpha import is deferred to generate_alpha_signals() so the rest of the
+# module (backtest_portfolio, compute_metrics, etc.) works without TA-Lib.
 
 
 # ============================================================================
@@ -93,6 +94,8 @@ def generate_alpha_signals(pair_data: Dict[str, pd.DataFrame]) -> Dict[str, pd.D
 
     Returns the same dict with enriched DataFrames.
     """
+    from alpha.SimpleEmaFactors import EmaAlpha  # lazy: requires TA-Lib C library
+
     enriched = {}
     for pair, df in pair_data.items():
         # EmaAlpha expects a DataFrame with OHLCV columns + metadata dict

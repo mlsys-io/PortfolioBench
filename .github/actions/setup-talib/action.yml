@@ -1,0 +1,50 @@
+name: Setup TA-Lib
+description: Cache and build the TA-Lib C library from source
+
+inputs:
+  talib-version:
+    description: TA-Lib version to install
+    required: true
+  cache-version:
+    description: Cache key version suffix
+    required: false
+    default: "1"
+
+runs:
+  using: composite
+  steps:
+    - name: Cache TA-Lib
+      id: cache-talib
+      uses: actions/cache@v4
+      with:
+        path: |
+          /usr/lib/libta_lib*
+          /usr/include/ta-lib/
+          /usr/include/ta_*.h
+        key: talib-${{ inputs.talib-version }}-${{ runner.os }}-v${{ inputs.cache-version }}
+
+    - name: Verify TA-Lib cache
+      id: verify-talib
+      shell: bash
+      run: |
+        if [ -f /usr/lib/libta_lib.so ] || [ -f /usr/lib/libta_lib.a ]; then
+          echo "installed=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "installed=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Build TA-Lib from source
+      if: steps.verify-talib.outputs.installed != 'true'
+      shell: bash
+      run: |
+        sudo apt-get update && sudo apt-get install -y build-essential wget
+        wget https://github.com/ta-lib/ta-lib/releases/download/v${{ inputs.talib-version }}/ta-lib-${{ inputs.talib-version }}-src.tar.gz
+        tar -xzf ta-lib-${{ inputs.talib-version }}-src.tar.gz
+        cd ta-lib-${{ inputs.talib-version }}
+        ./configure --prefix=/usr
+        make -j$(nproc)
+        sudo make install
+
+    - name: Refresh linker cache
+      shell: bash
+      run: sudo ldconfig
