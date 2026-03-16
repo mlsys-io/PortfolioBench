@@ -35,8 +35,7 @@ class adaptive_trend(IStrategy):
     This reflects the paper’s view that crypto has a long-run positive drift, 
     so the portfolio should not be perfectly market-neutral. 
     8. At the next monthly rebalance, repeat the universe-selection process again: 
-    re-check market-cap eligibility, re-check Sharpe, and allow coins to enter 
-    or leave the tradable set. 
+    re-check market-cap eligibility, re-check Sharpe, and allow coins to enter or leave the tradable set. 
 
     """
 
@@ -45,7 +44,6 @@ class adaptive_trend(IStrategy):
     # Paper uses 6-hour candles. (H6)
     timeframe = "4h"
     can_short = False
-
     # Let custom_stoploss manage exits. Keep a hard stop as safety.
     stoploss = -0.99
     minimal_roi = {}
@@ -64,25 +62,25 @@ class adaptive_trend(IStrategy):
 
     # Hyperoptable parameters
     # Momentum lookback L in candles (paper uses L as a tunable lookback).
-    mom_lookback = IntParameter(8, 80, default=24, space="buy")  # 24 * 6h = 6 days
+    mom_lookback = IntParameter(8, 80, default=40, space="buy")  # 24 * 6h = 6 days
 
     # Entry threshold θ_entry
-    theta_entry = DecimalParameter(0.002, 0.08, decimals=3, default=0.010, space="buy")
+    theta_entry = DecimalParameter(0.002, 0.08, decimals=3, default=0.003, space="buy")
 
     # ATR period k and multiplier α for trailing stop
     atr_period = IntParameter(7, 40, default=14, space="sell")
     atr_mult = DecimalParameter(1.5, 4.5, decimals=2, default=2.50, space="sell")
 
     # Rolling Sharpe window (proxy for “previous month”)
-    sharpe_window_candles = IntParameter(80, 200, default=120, space="buy")  # ~30d
+    sharpe_window_candles = IntParameter(80, 200, default=60, space="buy")  # ~30d
 
     # Sharpe thresholds γ_L, γ_S (paper uses 1.3 / 1.7)
-    gamma_long = DecimalParameter(0.5, 3.0, decimals=2, default=1.30, space="buy")
+    gamma_long = DecimalParameter(0.5, 3.0, decimals=2, default=0.30, space="buy")
     gamma_short = DecimalParameter(0.5, 3.5, decimals=2, default=1.70, space="buy")
 
     # Market-cap filter sizes (paper uses KL=15 and bottom-KS).
-    top_k_long = IntParameter(5, 30, default=10, space="buy")
-    bottom_k_short = IntParameter(5, 60, default=30, space="buy")
+    top_k_long = IntParameter(5, 30, default=2, space="buy")
+    bottom_k_short = IntParameter(5, 60, default=2, space="buy")
 
     # Asymmetric allocation λ = 0.7 (long) / 0.3 (short).
     long_alloc = DecimalParameter(0.50, 0.90, decimals=2, default=0.70, space="buy")
@@ -95,34 +93,37 @@ class adaptive_trend(IStrategy):
         return pair.split("/")[0].strip().upper()
 
     def load_market_cap_data(self) -> Optional[pd.DataFrame]:
-        """
-        Expected CSV (offline) format (example):
-          date,symbol,marketCap
-          2024-01-01,ETH,250000000000
-          2024-01-01,SOL,45000000000
-          ...
-
-        We compute per-date rank + total_count internally.
-        """
         if self._mcap_df is not None:
             return self._mcap_df
 
         base_dir = Path(__file__).resolve().parent
-        path = base_dir / "coingecko_marketcap_daily.csv"  # YOU provide this file
-        if not path.exists():
-            # If absent, we simply disable market-cap filtering.
+        csv_files = list(base_dir.glob("*-usd-max.csv"))
+
+        frames = []
+
+        for path in csv_files:
+            df = pd.read_csv(path)
+
+            required_cols = {"snapped_at", "market_cap"}
+            if not required_cols.issubset(df.columns):
+                continue
+
+            symbol = path.stem.split("-")[0].upper()
+
+            temp = pd.DataFrame({
+                "date": pd.to_datetime(df["snapped_at"], utc=True).dt.floor("D"),
+                "symbol": symbol,
+                "marketCap": pd.to_numeric(df["market_cap"], errors="coerce"),
+            })
+
+            temp = temp.dropna(subset=["date", "marketCap"])
+            frames.append(temp)
+
+        if not frames:
             self._mcap_df = None
             return None
 
-        df = pd.read_csv(path)
-        if not {"date", "symbol", "marketCap"}.issubset(df.columns):
-            raise ValueError("Market cap CSV must contain: date,symbol,marketCap")
-
-        df["date"] = pd.to_datetime(df["date"], utc=True).dt.floor("D")
-        df["symbol"] = df["symbol"].astype(str).str.upper().str.strip()
-        df["marketCap"] = pd.to_numeric(df["marketCap"], errors="coerce")
-
-        # Rank per date (1 = largest cap)
+        df = pd.concat(frames, ignore_index=True)
         df["rank"] = df.groupby("date")["marketCap"].rank(ascending=False, method="min")
         df["total_count"] = df.groupby("date")["symbol"].transform("count")
 
@@ -131,33 +132,44 @@ class adaptive_trend(IStrategy):
 
     def _merge_market_cap(self, dataframe: DataFrame, pair: str) -> DataFrame:
         mcap = self.load_market_cap_data()
+
+        # Reset columns every time so old state cannot leak in
         dataframe["mcap_rank"] = np.nan
         dataframe["mcap_total"] = np.nan
+        dataframe["allow_long_mcap"] = 0
+        dataframe["allow_short_mcap"] = 0
 
-        if mcap is None:
+        if mcap is None or mcap.empty:
             dataframe["allow_long_mcap"] = 1
             dataframe["allow_short_mcap"] = 1
             return dataframe
 
         sym = self._base_symbol(pair)
 
-        # Candle date in UTC floored to day to match mcap df.
+        # Ensure candle dates are daily UTC keys
         dataframe["date_day"] = pd.to_datetime(dataframe["date"], utc=True).dt.floor("D")
 
-        mcap_sym = mcap[mcap["symbol"] == sym][["date", "rank", "total_count"]].copy()
-        mcap_sym = mcap_sym.rename(columns={"date": "date_day", "rank": "mcap_rank", "total_count": "mcap_total"})
+        # Keep only this symbol
+        mcap_sym = mcap.loc[mcap["symbol"] == sym, ["date", "rank", "total_count"]].copy()
 
-        dataframe = dataframe.merge(mcap_sym, on="date_day", how="left")
+        if mcap_sym.empty:
+            return dataframe
 
-        # If no cap info for that day, be conservative: disallow both.
+        # Build lookup maps 
+        rank_map = dict(zip(mcap_sym["date"], mcap_sym["rank"]))
+        total_map = dict(zip(mcap_sym["date"], mcap_sym["total_count"]))
+
+        dataframe["mcap_rank"] = dataframe["date_day"].map(rank_map)
+        dataframe["mcap_total"] = dataframe["date_day"].map(total_map)
+
         dataframe["allow_long_mcap"] = (
-            (dataframe["mcap_rank"].notna())
+            dataframe["mcap_rank"].notna()
             & (dataframe["mcap_rank"] <= float(self.top_k_long.value))
         ).astype(int)
 
         dataframe["allow_short_mcap"] = (
-            (dataframe["mcap_rank"].notna())
-            & (dataframe["mcap_total"].notna())
+            dataframe["mcap_rank"].notna()
+            & dataframe["mcap_total"].notna()
             & (dataframe["mcap_rank"] >= (dataframe["mcap_total"] - float(self.bottom_k_short.value) + 1))
         ).astype(int)
 
@@ -194,7 +206,7 @@ class adaptive_trend(IStrategy):
 
         # Clean up early NaNs (don’t invent signals before indicators exist)
         dataframe.replace([np.inf, -np.inf], np.nan, inplace=True)
-
+        print(dataframe.head())
         return dataframe
 
     # Entries
@@ -224,7 +236,7 @@ class adaptive_trend(IStrategy):
             ),
             "enter_short"
         ] = 1
-
+        print(dataframe)
         return dataframe
 
     # Let trailing stop manage exits (so we don't set exit signals here).
