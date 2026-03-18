@@ -13,7 +13,6 @@ Suitable for: crypto / stocks, 4h timeframe
 from freqtrade.strategy import IStrategy, DecimalParameter, IntParameter
 from pandas import DataFrame
 import talib.abstract as ta
-import pandas as pd
 
 
 class TrendAtrStrategy(IStrategy):

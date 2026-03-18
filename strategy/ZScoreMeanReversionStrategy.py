@@ -14,7 +14,6 @@ Suitable for: crypto / US stocks, 4h or 1d timeframe
 from freqtrade.strategy import IStrategy, DecimalParameter, IntParameter
 from pandas import DataFrame
 import talib.abstract as ta
-import pandas as pd
 import numpy as np
 
 
