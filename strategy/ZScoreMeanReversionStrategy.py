@@ -1,3 +1,4 @@
+import numpy as np
 """
 ZScoreMeanReversionStrategy — Statistical mean-reversion on Bollinger Z-score
 ==============================================================================
@@ -14,7 +15,6 @@ Suitable for: crypto / US stocks, 4h or 1d timeframe
 from freqtrade.strategy import IStrategy, DecimalParameter, IntParameter
 from pandas import DataFrame
 import talib.abstract as ta
-import numpy as np
 
 
 class ZScoreMeanReversionStrategy(IStrategy):

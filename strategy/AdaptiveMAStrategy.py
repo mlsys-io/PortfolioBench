@@ -1,3 +1,4 @@
+import numpy as np
 """
 AdaptiveMAStrategy — Kaufman Adaptive Moving Average (KAMA) crossover
 =====================================================================
@@ -16,7 +17,6 @@ Logic:
 from freqtrade.strategy import IStrategy, IntParameter, DecimalParameter
 from pandas import DataFrame
 import talib.abstract as ta
-import numpy as np
 
 
 class AdaptiveMAStrategy(IStrategy):
