@@ -45,7 +45,7 @@ pip install -e .
 ### Verify the installation
 
 ```bash
-portbench version
+portbench -V
 ```
 
 ### Optional: install with hyperopt support
