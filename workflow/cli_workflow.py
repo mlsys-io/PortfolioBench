@@ -81,7 +81,7 @@ def run_workflow_cli(
     runner = LocalWorkflowRunner.from_file(path)
     register_all_handlers(runner)
 
-    wf_name = runner.workflow.metadata.name or path.stem
+    wf_name = runner.workflow.name or path.stem
 
     # Parse backtest config from the extra spec (domain-specific fields
     # stored alongside stages in the workflow JSON).

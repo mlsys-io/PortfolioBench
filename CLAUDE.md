@@ -26,6 +26,7 @@ pip install -e .
 - `user_data/strategies/` — Portfolio-optimization strategies (ONS, MinVar, InvVol, BestSingleAsset, ExpGradient, MaxSharpe, RiskParity, Polymarket)
 - `user_data/config.json` — Main backtesting config; `user_data/config_polymarket.json` — Polymarket config
 - `user_data/data/usstock/` — OHLCV feather files (119 instruments x 3 timeframes = 357 files; download from Google Drive)
+- `user_data/data/polymarket/` — Polymarket event contract feather files (generated via `portbench generate-data` or downloaded)
 - `utils/` — Bash scripts for backtesting, data generation, and testing
 
 ## Key Commands
@@ -40,7 +41,7 @@ portbench backtesting --strategy ONS_Portfolio --strategy-path ./user_data/strat
 # Run standalone portfolio pipeline
 portbench portfolio
 
-# Generate synthetic test data
+# Generate synthetic test data (all asset classes including Polymarket)
 portbench generate-data
 
 # Run unit tests

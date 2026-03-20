@@ -127,7 +127,8 @@ jobs:
           path: |
             user_data/data/usstock
             user_data/data/portfoliobench
-          key: benchmark-data-portfoliobench-v2
+            user_data/data/polymarket
+          key: benchmark-data-portfoliobench-v3
 
       # ── Download real data from Google Drive (skip if cached) ──
       - name: Download data from Google Drive
