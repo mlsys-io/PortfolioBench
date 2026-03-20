@@ -94,10 +94,15 @@ EVENTS = [
 def generate_event_prices(
     event: dict,
     start_date: str = "2024-06-01",
+    end_date: str = "2026-02-01",
     timeframe: str = "1d",
     seed: int | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Generate synthetic YES and NO contract price data for an event.
+
+    Data extends past the resolution date to *end_date* so that backtests
+    with post-resolution timeranges still find data.  After resolution the
+    contract trades at its settled value ($0 or $1) with residual volume.
 
     Returns (yes_df, no_df) each with columns: date, open, high, low, close, volume
     """
@@ -114,12 +119,20 @@ def generate_event_prices(
     period_ms = tf_periods[timeframe]
 
     start_ms = int(datetime.strptime(start_date, "%Y-%m-%d").timestamp() * 1000)
-    end_ms = int(datetime.strptime(event["resolution_date"], "%Y-%m-%d").timestamp() * 1000)
+    end_ms = int(datetime.strptime(end_date, "%Y-%m-%d").timestamp() * 1000)
+    resolution_ms = int(datetime.strptime(event["resolution_date"], "%Y-%m-%d").timestamp() * 1000)
     timestamps = list(range(start_ms, end_ms, period_ms))
     n = len(timestamps)
 
     if n < 10:
         return pd.DataFrame(), pd.DataFrame()
+
+    # Find the index where resolution happens
+    resolution_idx = n  # default: resolution is past all data
+    for i, ts in enumerate(timestamps):
+        if ts >= resolution_ms:
+            resolution_idx = i
+            break
 
     # Generate probability path using bounded random walk with drift toward outcome
     prob = event["initial_prob"]
@@ -127,11 +140,13 @@ def generate_event_prices(
     outcome = event["outcome"]
     probs = np.zeros(n)
 
-    for i in range(n):
+    pre_resolution_n = max(resolution_idx, 1)
+
+    for i in range(pre_resolution_n):
         probs[i] = prob
 
         # Progress toward resolution (0 to 1)
-        progress = i / n
+        progress = i / pre_resolution_n
 
         # Drift toward final outcome increases as resolution approaches
         drift_strength = 0.0001 + 0.005 * (progress ** 3)
@@ -151,11 +166,17 @@ def generate_event_prices(
         prob = prob + drift + shock + reversion
         prob = np.clip(prob, 0.01, 0.99)
 
-    # Force convergence in the last 5% of candles
-    convergence_start = int(n * 0.95)
-    for i in range(convergence_start, n):
-        t = (i - convergence_start) / (n - convergence_start)
+    # Force convergence in the last 5% of pre-resolution candles
+    convergence_start = int(pre_resolution_n * 0.95)
+    for i in range(convergence_start, pre_resolution_n):
+        t = (i - convergence_start) / max(pre_resolution_n - convergence_start, 1)
         probs[i] = probs[convergence_start] * (1 - t) + outcome * t
+        probs[i] = np.clip(probs[i], 0.01, 0.99)
+
+    # Post-resolution: contract trades at settled value with small noise
+    settled_yes = 0.99 if outcome == 1 else 0.01
+    for i in range(resolution_idx, n):
+        probs[i] = settled_yes + rng.normal(0, 0.002)
         probs[i] = np.clip(probs[i], 0.01, 0.99)
 
     # Build OHLCV from the probability path
@@ -194,8 +215,13 @@ def generate_event_prices(
 
 
 def main():
-    data_dir = Path("user_data/data/polymarket")
-    data_dir.mkdir(parents=True, exist_ok=True)
+    # Output to both polymarket/ (for polymarket config) and portfoliobench/ (for default config)
+    output_dirs = [
+        Path("user_data/data/polymarket"),
+        Path("user_data/data/portfoliobench"),
+    ]
+    for d in output_dirs:
+        d.mkdir(parents=True, exist_ok=True)
 
     timeframes = ["5m", "4h", "1d"]
     count = 0
@@ -213,15 +239,16 @@ def main():
 
             slug = event["slug"]
 
-            # Save YES contract
-            yes_path = data_dir / f"{slug}-YES_USDT-{tf}.feather"
-            yes_df.to_feather(yes_path, compression_level=9, compression="lz4")
-            count += 1
+            for data_dir in output_dirs:
+                # Save YES contract
+                yes_path = data_dir / f"{slug}-YES_USDT-{tf}.feather"
+                yes_df.to_feather(yes_path, compression_level=9, compression="lz4")
 
-            # Save NO contract
-            no_path = data_dir / f"{slug}-NO_USDT-{tf}.feather"
-            no_df.to_feather(no_path, compression_level=9, compression="lz4")
-            count += 1
+                # Save NO contract
+                no_path = data_dir / f"{slug}-NO_USDT-{tf}.feather"
+                no_df.to_feather(no_path, compression_level=9, compression="lz4")
+
+            count += 2
 
             print(
                 f"[DATA] {slug} {tf}: YES={len(yes_df)} rows "
@@ -229,7 +256,7 @@ def main():
                 f"NO={len(no_df)} rows"
             )
 
-    print(f"\nGenerated {count} feather files in {data_dir}")
+    print(f"\nGenerated {count} feather files in {', '.join(str(d) for d in output_dirs)}")
 
 
 if __name__ == "__main__":
