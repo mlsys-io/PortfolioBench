@@ -74,7 +74,7 @@ portbench download-data --exchange polymarket        # Polymarket prediction-mar
 
 This downloads feather files into the data directory (`user_data/data/portfoliobench/` or `user_data/data/polymarket/`).
 
-Alternatively, generate synthetic data for testing without downloading:
+Alternatively, generate synthetic data for testing without downloading (covers all asset classes including Polymarket):
 
 ```bash
 portbench generate-data

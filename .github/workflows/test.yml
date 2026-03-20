@@ -429,3 +429,33 @@ jobs:
             --timerange 20260101-20260131 \
             --pairs DJI/USD FTSE/USD GSPC/USD \
             --dry-run-wallet 1000000
+
+      # ── Polymarket strategies ──
+
+      - name: Backtest PolymarketMomentumStrategy (5m)
+        run: |
+          portbench backtesting \
+            --strategy PolymarketMomentumStrategy \
+            --strategy-path ./strategy \
+            --timeframe 5m \
+            --timerange 20240901-20241001 \
+            --pairs TRUMP-WIN-YES/USDT BTC-100K-YES/USDT ETH-10K-NO/USDT
+
+      - name: Backtest PolymarketMeanReversionStrategy (4h)
+        run: |
+          portbench backtesting \
+            --strategy PolymarketMeanReversionStrategy \
+            --strategy-path ./strategy \
+            --timeframe 4h \
+            --timerange 20240901-20250101 \
+            --pairs TRUMP-WIN-YES/USDT FED-RATE-CUT-YES/USDT SPX-6000-YES/USDT
+
+      - name: Backtest PolymarketPortfolio (5m)
+        run: |
+          portbench backtesting \
+            --strategy PolymarketPortfolio \
+            --strategy-path ./user_data/strategies \
+            --timeframe 5m \
+            --timerange 20260101-20260103 \
+            --pairs TRUMP-WIN-YES/USDT BTC-100K-YES/USDT ETH-10K-YES/USDT \
+            --dry-run-wallet 1000000
