@@ -1,6 +1,6 @@
 {
   "pipeline_name": "Simple EMA Cross",
-  "start_time": "2026-03-21T13:34:40.937169",
+  "start_time": "2026-03-25T12:54:46.173961",
   "end_time": "",
   "duration_s": 0.0,
   "stages": {
@@ -50,10 +50,10 @@
       "status": "success",
       "duration_s": 0,
       "data_summary": {
-        "total_return_pct": 2.48,
-        "annualised_return_pct": 9.37,
-        "annualised_sharpe": 0.5733,
-        "max_drawdown_pct": -9.53,
+        "total_return_pct": 5.99,
+        "annualised_return_pct": 23.68,
+        "annualised_sharpe": 1.169,
+        "max_drawdown_pct": -10.02,
         "n_bars": 100
       },
       "errors": [],
@@ -61,10 +61,10 @@
     }
   },
   "metrics": {
-    "total_return_pct": 2.48,
-    "annualised_return_pct": 9.37,
-    "annualised_sharpe": 0.5733,
-    "max_drawdown_pct": -9.53,
+    "total_return_pct": 5.99,
+    "annualised_return_pct": 23.68,
+    "annualised_sharpe": 1.169,
+    "max_drawdown_pct": -10.02,
     "n_bars": 100
   },
   "validation": {
@@ -139,20 +139,20 @@
         "message": "Strategy signal statistics computed",
         "details": {
           "BTC/USDT_ema_cross": {
-            "count": 0,
-            "pct": 0.0
+            "count": 41,
+            "pct": 41.0
           },
           "ETH/USDT_ema_cross": {
-            "count": 37,
-            "pct": 37.0
+            "count": 24,
+            "pct": 24.0
           },
           "SOL/USDT_ema_cross": {
-            "count": 9,
-            "pct": 9.0
+            "count": 24,
+            "pct": 24.0
           },
           "XRP/USDT_ema_cross": {
-            "count": 19,
-            "pct": 19.0
+            "count": 3,
+            "pct": 3.0
           }
         }
       },
