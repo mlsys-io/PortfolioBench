@@ -51,7 +51,6 @@ from __future__ import annotations
 
 import logging
 
-import numpy as np
 import pandas as pd
 from pandas import DataFrame
 
