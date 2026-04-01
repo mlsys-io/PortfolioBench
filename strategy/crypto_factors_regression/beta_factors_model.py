@@ -1,22 +1,16 @@
 
 # --- Do not remove these libs ---
-from math import tau
 from freqtrade.strategy import IStrategy
-from typing import Dict, List
-from functools import reduce
 from pandas import DataFrame
 # --------------------------------
 
-from freqtrade.strategy import (BooleanParameter, CategoricalParameter, DecimalParameter,
-                                IStrategy, IntParameter)
-import talib.abstract as ta
-import freqtrade.vendor.qtpylib.indicators as qtpylib
+from freqtrade.strategy import (DecimalParameter)
 
 import pandas as pd
 import numpy as np
 import joblib
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 class beta_factors_model(IStrategy):
 
