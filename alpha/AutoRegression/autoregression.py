@@ -27,7 +27,7 @@ def train_one_epoch(loader: DataLoader, model: nn.Module, loss_fn, optimizer):
         optimizer.step()
         running_loss += loss.item() * xb.size(0)
     epoch_loss = running_loss / size
-    print(f"Average traning loss: {epoch_loss: .10e}")
+    print(f"Average training loss: {epoch_loss: .10e}")
     return epoch_loss
 
 def train(train_dataset: Dataset, epoches: int, ar_model: nn.Module):
