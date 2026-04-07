@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
 
-def load_data():
-    data_path = "./binance/BTC_USDT-5m.feather" # Configure to the correct data paths
+def load_data(data_path: str = "./binance/BTC_USDT-5m.feather",
+              start_date: str = "2021-01-01"):
     df = pd.read_feather(data_path)
-    df = df[df["date"] > "2021-01-01"]
+    df = df[df["date"] > start_date]
     df["log_return"] = np.log(df['close'] / df['close'].shift(1))
     print(df.head())
     return df
