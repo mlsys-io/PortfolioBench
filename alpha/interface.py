@@ -15,9 +15,9 @@ class IAlpha(ABC):
 
 fwd_ret_timeframe = [1, 5, 10, 20, 90]
 class AlphaEvaluator:
-    def __init__(self, dataframe: DataFrame, alpha: IAlpha):
+    def __init__(self, dataframe: DataFrame, alpha: type[IAlpha], metadata: dict = None):
         self.df = dataframe
-        self.alpha = alpha(dataframe)
+        self.alpha = alpha(dataframe, metadata if metadata is not None else {})
         
     def evaluate_information_coefficient(self, alpha_names):
         df_processed = self.alpha.process()
