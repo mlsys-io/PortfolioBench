@@ -11,7 +11,7 @@ from alpha.SimpleEmaFactors import EmaAlpha
 from alpha.RsiAlpha import RsiAlpha
 from alpha.MacdAlpha import MacdAlpha
 from alpha.BollingerAlpha import BollingerAlpha
-
+from alpha.EventLstmAlpha import EventLstmAlpha # type: ignore
 
 def _make_ohlcv(n=100):
     """Create a minimal synthetic OHLCV DataFrame."""
@@ -159,3 +159,41 @@ class TestBollingerAlpha:
         valid = result["bb_pctb"].dropna()
         # Mean %B across a random walk should be roughly centered around 0.5
         assert 0.2 < valid.mean() < 0.8
+
+class TestEventLstmAlpha:
+    @pytest.mark.slow
+    def test_event_lstm_alpha_with_fake_data(self):
+        # --- Generate fake OHLCV data ---
+        length = 100
+        np.random.seed(42)
+        df = pd.DataFrame({
+            "open": np.random.rand(length),
+            "high": np.random.rand(length),
+            "low": np.random.rand(length),
+            "close": np.random.rand(length),
+            "volume": np.random.rand(length)
+        })
+
+        # --- Path to your real trained LSTM model ---
+        model_path = "./alpha/event_stacked_lstm.pth"
+        
+        # --- Sequence length (must match trained model) ---
+        seq_len = 64
+
+        # --- Instantiate alpha using real model ---
+        alpha = EventLstmAlpha(df, model_path=model_path, seq_len=seq_len)
+        result = alpha.process()
+
+        # --- Assertions ---
+        # Column must exist
+        assert "lstm_pred" in result.columns, "Missing 'lstm_pred' column"
+        
+        # First seq_len rows will have NaN (not enough history)
+        assert result["lstm_pred"].iloc[:seq_len].isna().all()
+
+        # Predictions after seq_len should be numbers
+        valid_preds = result["lstm_pred"].iloc[seq_len:]
+        assert valid_preds.notna().all(), "Predictions should be filled"
+        
+        # Predictions should be within [0,1] because close prices are normalized
+        assert (valid_preds >= 0).all() and (valid_preds <= 1).all()
