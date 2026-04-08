@@ -1,0 +1,59 @@
+{
+  "apiVersion": "lumid/v1",
+  "kind": "Workflow",
+  "metadata": {
+    "name": "ema-blend-ai-analysis",
+    "annotations": {
+      "description": "EMA alpha + blended portfolio + AI-powered analysis via FlowMesh GPU inference."
+    }
+  },
+  "spec": {
+    "stages": {
+      "alpha": {
+        "template": "portbench.alpha",
+        "params": {
+          "type": "ema"
+        }
+      },
+      "strategy": {
+        "template": "portbench.strategy",
+        "dependsOn": ["alpha"],
+        "params": {
+          "type": "ema_cross"
+        }
+      },
+      "portfolio": {
+        "template": "portbench.portfolio",
+        "dependsOn": ["strategy"],
+        "params": {
+          "type": "blend",
+          "ons": {
+            "eta": 0.0,
+            "beta": 1.0,
+            "delta": 0.125
+          },
+          "blend_weights": {
+            "equal": 0.34,
+            "ons": 0.33,
+            "signal": 0.33
+          }
+        }
+      },
+      "ai_summary": {
+        "template": "flowmesh.analysis",
+        "dependsOn": ["portfolio"],
+        "params": {
+          "model": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+          "analysis_type": "portfolio_summary",
+          "max_tokens": 512,
+          "gpu_memory": "4GB"
+        }
+      }
+    },
+    "backtest": {
+      "pairs": ["BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT", "MSFT/USD"],
+      "timeframe": "1d",
+      "initial_capital": 10000
+    }
+  }
+}

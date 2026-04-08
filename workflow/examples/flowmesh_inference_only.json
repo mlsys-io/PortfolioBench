@@ -1,0 +1,25 @@
+{
+  "apiVersion": "lumid/v1",
+  "kind": "Workflow",
+  "metadata": {
+    "name": "flowmesh-inference-only",
+    "annotations": {
+      "description": "Pure GPU inference via FlowMesh — no local PortfolioBench stages. Useful for testing the FlowMesh integration end-to-end."
+    }
+  },
+  "spec": {
+    "stages": {
+      "inference": {
+        "template": "flowmesh.inference",
+        "params": {
+          "model": "meta-llama/Llama-3.1-8B-Instruct",
+          "system_prompt": "You are a helpful financial analyst.",
+          "prompt": "What are the key risk factors to consider when constructing a multi-asset portfolio that includes cryptocurrencies, US equities, and global indices?",
+          "temperature": 0.7,
+          "max_tokens": 512,
+          "gpu_memory": "16GB"
+        }
+      }
+    }
+  }
+}

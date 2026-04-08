@@ -130,3 +130,6 @@ target/
 !config_examples/config_freqai.example.json
 
 docker-compose-*.yml
+
+# Workflow results (regenerable via make e2e-*)
+results/

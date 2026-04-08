@@ -1,0 +1,23 @@
+{
+  "apiVersion": "lumid/v1",
+  "kind": "Workflow",
+  "metadata": {
+    "name": "flowmesh-echo-test",
+    "annotations": {
+      "description": "Connectivity test: submits an echo task to FlowMesh (no GPU required)."
+    }
+  },
+  "spec": {
+    "stages": {
+      "echo": {
+        "template": "flowmesh.echo",
+        "params": {
+          "payload": {
+            "test": "hello from PortfolioBench",
+            "timestamp": "auto"
+          }
+        }
+      }
+    }
+  }
+}
