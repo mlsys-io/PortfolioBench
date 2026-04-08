@@ -103,6 +103,10 @@ class _LazyARModel:
     def __getattr__(self, name):
         # Proxy attribute access to the underlying model instance.
         return getattr(self._load(), name)
+    
+    def __call__(self, *args, **kwargs):
+        # Forward calls to the underlying model
+        return self._load()(*args, **kwargs)
 
 
 trained_ar_model = _LazyARModel(model_path)
