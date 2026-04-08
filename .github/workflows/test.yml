@@ -68,6 +68,7 @@ jobs:
         run: |
           pip install --upgrade pip "setuptools<75" wheel
           pip install -r requirements.txt
+          pip install -r requirements-ml.txt
           pip install scipy pytest
           pip install -e .
 
