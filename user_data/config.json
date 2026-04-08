@@ -40,11 +40,10 @@
         "ccxt_config": {},
         "ccxt_async_config": {},
         "pair_whitelist": [
-            "BTC/USDT",
-            "ETH/USDT",
-            "SOL/USDT",
-            "XRP/USDT",
-            "MSFT/USD"
+            "NVDA/USD",
+            "MSFT/USD",
+            "GOOG/USD",
+            "AAPL/USD"
         ],
         "pair_blacklist": [
             "BNB/.*"
