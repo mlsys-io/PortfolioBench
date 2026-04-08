@@ -15,17 +15,18 @@ class IAlpha(ABC):
 
 fwd_ret_timeframe = [1, 5, 10, 20, 90]
 class AlphaEvaluator:
-    def __init__(self, dataframe: DataFrame, alpha: IAlpha):
+    def __init__(self, dataframe: DataFrame, alpha: type[IAlpha], metadata: dict = None):
         self.df = dataframe
-        self.alpha = alpha(dataframe)
+        self.alpha = alpha(dataframe, metadata if metadata is not None else {})
         
     def evaluate_information_coefficient(self, alpha_names):
-        self.df = self.alpha.process()
+        df_processed = self.alpha.process()
         out = {}
         for a in alpha_names:
             for t in fwd_ret_timeframe:
-                self.df['fwd_ret'] = self.df['close'].pct_change().shift(-t)
-                self.df = self.df.dropna(subset=[a, 'fwd_ret'])
-                ic = self.df['alpha'].corr(self.df['fwd_ret'], method='spearman')
+                fwd_ret = df_processed['close'].pct_change().shift(-t)
+                temp_df = DataFrame({'alpha': df_processed[a], 'fwd_ret': fwd_ret})
+                temp_df = temp_df.dropna(subset=['alpha', 'fwd_ret'])
+                ic = temp_df['alpha'].corr(temp_df['fwd_ret'], method='spearman')
                 out[(a, t)] = ic
         return out

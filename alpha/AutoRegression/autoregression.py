@@ -27,7 +27,7 @@ def train_one_epoch(loader: DataLoader, model: nn.Module, loss_fn, optimizer):
         optimizer.step()
         running_loss += loss.item() * xb.size(0)
     epoch_loss = running_loss / size
-    print(f"Average traning loss: {epoch_loss: .10e}")
+    print(f"Average training loss: {epoch_loss: .10e}")
     return epoch_loss
 
 def train(train_dataset: Dataset, epoches: int, ar_model: nn.Module):
@@ -78,8 +78,34 @@ def load_ar_model(model_path="./ar_model.pth", lag=90):
 
 base_dir = Path(__file__).resolve().parent
 model_path = base_dir / "ar_model.pth"
-trained_ar_model = load_ar_model(model_path)
 
+
+class _LazyARModel:
+    """
+    Lazily loads and caches the AR model on first use.
+
+    This avoids loading the model at import time, so that import errors
+    due to missing/corrupt weights or missing dependencies do not
+    prevent the rest of the package from being used.
+    """
+
+    def __init__(self, path):
+        self._path = path
+        self._model = None
+
+    def _load(self):
+        if self._model is None:
+            # Delegate to the existing loader; any exceptions will be
+            # raised at first use rather than at import time.
+            self._model = load_ar_model(self._path)
+        return self._model
+
+    def __getattr__(self, name):
+        # Proxy attribute access to the underlying model instance.
+        return getattr(self._load(), name)
+
+
+trained_ar_model = _LazyARModel(model_path)
 # if __name__ == "__main__":
 #     print("1. Define model")
 #     ar_model = AR(lag=90)
