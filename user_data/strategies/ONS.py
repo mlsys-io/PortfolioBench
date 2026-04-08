@@ -96,7 +96,12 @@ class ONS_Portfolio(IStrategy):
         
         if self.dp:
             # Dynamically fetch the current whitelist provided to the bot
-            target_pairs = self.dp.current_whitelist()
+            try:
+                target_pairs = self.dp.current_whitelist()
+            except Exception:
+                logger.debug(f"Pairlist provider not available. Falling back to single pair: {metadata['pair']}")
+                target_pairs = [metadata['pair']]
+                
             price_dict = {}
             for pair in target_pairs:
                 inf_df = self.dp.get_pair_dataframe(pair, self.timeframe)
