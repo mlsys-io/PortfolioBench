@@ -2,3 +2,6 @@
 	path = freqtrade
 	url = https://github.com/mlsys-io/freqtrade.git
 	branch = develop
+[submodule "stg"]
+	path = stg
+	url = https://github.com/casperngeen/event-pred
