@@ -264,9 +264,10 @@ class adaptive_trend(IStrategy):
         We store the stop price in trade custom data so it “trails”.
         Returns stoploss as a negative value (relative stop) as required by Freqtrade.
         """
-        df = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+        df, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+
         if df is None or df.empty:
-            return 1  # keep default / do nothing
+            return 1
 
         last = df.iloc[-1]
         atr = last.get("atr", None)
