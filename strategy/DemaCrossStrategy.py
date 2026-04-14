@@ -1,7 +1,8 @@
 """Strategy: Dema Cross Strategy"""
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
+
 
 class DemaCrossStrategy(IStrategy):
     timeframe = "5m"

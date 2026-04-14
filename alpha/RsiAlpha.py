@@ -5,9 +5,9 @@ and a smoothed RSI signal line useful for crossover strategies.
 """
 
 import talib.abstract as ta
+from freqtrade.strategy.parameters import IntParameter
 
 from alpha.interface import IAlpha
-from freqtrade.strategy.parameters import IntParameter
 
 
 class RsiAlpha(IAlpha):

@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-import pandas as pd
 import pytest
 
 from polymarket.contracts import load_contracts
@@ -97,7 +96,7 @@ class TestVerifySettlements:
         assert len(results) == 12
         failures = [r for r in results if not r["match"]]
         assert failures == [], (
-            f"Settlement mismatches:\n" +
+            "Settlement mismatches:\n" +
             "\n".join(f"  {r['slug']}: outcome={r['outcome_prices_settlement']}, "
                       f"btc={r['btc_derived_settlement']}" for r in failures)
         )

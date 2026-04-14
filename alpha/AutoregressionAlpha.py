@@ -1,8 +1,9 @@
 import numpy as np
 import torch
 from pandas import DataFrame
+
+from alpha.AutoRegression.autoregression import build_train, trained_ar_model
 from alpha.interface import IAlpha
-from alpha.AutoRegression.autoregression import trained_ar_model, build_train
 
 AR_MODEL_PATH = "./ar_model.pth"
 AR_LAG = 90

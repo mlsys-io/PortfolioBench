@@ -39,12 +39,11 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Optional
 
 import pandas as pd
-
 from freqtrade.persistence import Trade
 from freqtrade.strategy import IStrategy
 
@@ -57,7 +56,7 @@ logger = logging.getLogger(__name__)
 SETTLE_YES = 0.999
 SETTLE_NO = 0.001
 
-UTC = timezone.utc
+UTC = UTC
 
 
 class DualModelPolymarketPortfolio(IStrategy):

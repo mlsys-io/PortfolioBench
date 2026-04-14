@@ -14,34 +14,34 @@ Coordinates the complete portfolio construction workflow:
 
 from __future__ import annotations
 
+import logging
 import os
 import sys
 import time
-import logging
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
-import pandas as pd
+from typing import Dict, List
+
 import numpy as np
+import pandas as pd
 
 # Ensure project root is on path
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
-from pipeline.config import PipelineConfig, AlphaType, StrategyType
-from pipeline.verification import PipelineVerification, ValidationResult
+from pipeline.config import AlphaType, PipelineConfig, StrategyType
 from pipeline.results import PipelineResult, StageOutput
-
+from pipeline.verification import PipelineVerification
 from portfolio.PortfolioManagement import (
-    load_pair_data,
     align_close_prices,
-    ema_cross_signals,
+    backtest_portfolio,
+    blend_strategy_weights,
     build_ema_position_series,
     calculate_ons_weights,
-    equal_weight_allocation,
-    blend_strategy_weights,
-    backtest_portfolio,
     compute_metrics,
+    ema_cross_signals,
+    equal_weight_allocation,
+    load_pair_data,
 )
 
 logger = logging.getLogger(__name__)
@@ -184,7 +184,7 @@ class PortfolioPipeline:
                     data_summary=metrics
                 ))
                 
-                logger.info(f"\nBacktest Results:")
+                logger.info("\nBacktest Results:")
                 logger.info(f"  Total return:        {metrics['total_return_pct']:.2f}%")
                 logger.info(f"  Annualized return:   {metrics['annualised_return_pct']:.2f}%")
                 logger.info(f"  Annualized Sharpe:   {metrics['annualised_sharpe']:.4f}")

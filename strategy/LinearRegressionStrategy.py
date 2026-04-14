@@ -1,7 +1,8 @@
 """Strategy: Linear Regression Slope Strategy"""
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
+
 
 class LinearRegressionStrategy(IStrategy):
     timeframe = "5m"

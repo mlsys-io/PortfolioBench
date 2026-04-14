@@ -1,7 +1,7 @@
-from multiprocessing import Pool
 from freqtrade.commands.optimize_commands import setup_optimize_configuration
-from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.enums import RunMode
+from freqtrade.optimize.backtesting import Backtesting
+
 from strategy import strategy_list
 
 

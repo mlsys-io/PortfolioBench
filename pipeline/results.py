@@ -10,13 +10,11 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Dict, List, Any, Optional
-from datetime import datetime
-import pandas as pd
-import numpy as np
+from typing import Any, Dict, List, Optional
 
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -204,7 +202,7 @@ class PipelineResult:
             "</head>",
             "<body>",
             "<div class='header'>",
-            f"<h1>PortfolioBench Pipeline Report</h1>",
+            "<h1>PortfolioBench Pipeline Report</h1>",
             f"<p>Pipeline: {summary['pipeline_name']}</p>",
             f"<p>Duration: {summary['duration_s']:.2f}s</p>",
             "</div>",
@@ -325,7 +323,7 @@ class PipelineResult:
         print(f"  [~] Skipped:     {stages['skipped']}")
         
         if summary['metrics']:
-            print(f"\nMetrics:")
+            print("\nMetrics:")
             for key, value in summary['metrics'].items():
                 if value is not None:
                     if isinstance(value, float):

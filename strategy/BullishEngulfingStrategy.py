@@ -1,7 +1,8 @@
 """Strategy: Bullish Engulfing Pattern Strategy"""
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
+
 
 class BullishEngulfingStrategy(IStrategy):
     timeframe = "5m"

@@ -15,9 +15,10 @@ Usage:
 
 import os
 import sys
+from typing import Dict, List, Tuple
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Tuple
 from scipy.optimize import minimize
 
 # ---------------------------------------------------------------------------

@@ -13,22 +13,22 @@ This file demonstrates:
 
 import sys
 from pathlib import Path
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 
 # Add project root to path
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from pipeline.config import PipelineConfig, PresetConfigs
-from pipeline.orchestrator import PortfolioPipeline, run_pipeline
 from pipeline.integrations import (
-    FreqtradeIntegration,
     BatchPipelineRunner,
-    PresetPipelineRunner,
+    FreqtradeIntegration,
     PipelineComparator,
+    PresetPipelineRunner,
 )
-
+from pipeline.orchestrator import run_pipeline
 
 # ============================================================================
 # HELPER: Generate synthetic test data
@@ -99,13 +99,13 @@ def example_2_custom_config():
     
     from pipeline.config import (
         AlphaConfig,
-        StrategyConfig,
-        PortfolioConfig,
+        AlphaType,
         BacktestConfig,
         DataConfig,
-        AlphaType,
-        StrategyType,
         PortfolioAlgorithm,
+        PortfolioConfig,
+        StrategyConfig,
+        StrategyType,
     )
     
     # Build configuration programmatically
@@ -212,7 +212,7 @@ def example_4_compare_pipelines():
     
     # Print summary
     summary = runner.get_summary()
-    print(f"\nBatch Summary:")
+    print("\nBatch Summary:")
     print(f"  Total runs: {summary['total_runs']}")
     print(f"  Successful: {summary['successful']}")
     print(f"  Failed: {summary['failed']}")

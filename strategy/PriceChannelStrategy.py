@@ -1,7 +1,8 @@
 """Strategy: Price Channel Trend Strategy"""
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
+
 
 class PriceChannelStrategy(IStrategy):
     timeframe = "5m"

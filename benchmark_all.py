@@ -22,10 +22,9 @@ import json
 import os
 import sys
 import time
-import traceback
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 # ---------------------------------------------------------------------------
 # Ensure project root is on sys.path
@@ -433,8 +432,8 @@ def _run_single_backtest(
 ) -> Dict[str, Any]:
     """Run a single freqtrade backtest programmatically and return results."""
     from freqtrade.commands.optimize_commands import setup_optimize_configuration
-    from freqtrade.optimize.backtesting import Backtesting
     from freqtrade.enums import RunMode
+    from freqtrade.optimize.backtesting import Backtesting
 
     config_path = os.path.join(PROJECT_ROOT, "user_data", "config.json")
 

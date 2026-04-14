@@ -1,7 +1,8 @@
 """Strategy 7: Williams %R Reversal"""
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
+
 
 class WilliamsRStrategy(IStrategy):
     timeframe = "5m"

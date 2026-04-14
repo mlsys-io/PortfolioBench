@@ -193,7 +193,7 @@ def train(
             "  %-6s  AUC=%.4f  Brier=%.4f  Acc=%.4f  n=%d",
             tag, auc, brier, acc, len(y),
         )
-        return {"auc": auc, "brier": brier, "accuracy": acc, "n": int(len(y))}
+        return {"auc": auc, "brier": brier, "accuracy": acc, "n": len(y)}
 
     logger.info("Evaluation metrics:")
     metrics = {

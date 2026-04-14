@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+
 """
 MultiFactorConfluenceStrategy — Multi-signal confluence scoring
 ===============================================================
@@ -18,9 +19,9 @@ Logic:
 Suitable for: crypto, 4h timeframe — robust multi-asset design
 """
 
-from freqtrade.strategy import IStrategy, IntParameter
-from pandas import DataFrame
 import talib.abstract as ta
+from freqtrade.strategy import IntParameter, IStrategy
+from pandas import DataFrame
 
 
 class MultiFactorConfluenceStrategy(IStrategy):

@@ -1,7 +1,8 @@
 import talib.abstract as ta
+from freqtrade.strategy.parameters import IntParameter
 
 from alpha.interface import IAlpha
-from freqtrade.strategy.parameters import IntParameter
+
 
 class EmaAlpha(IAlpha):
     def __init__(self, dataframe, metadata):

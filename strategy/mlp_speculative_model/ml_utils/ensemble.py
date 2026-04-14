@@ -1,11 +1,13 @@
 import os
+
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 file_path = os.path.join(BASE_DIR, "..", "models", "model_final_5_2.h5")
 
-from sklearn.preprocessing import StandardScaler
-from tensorflow import keras # type: ignore
 import numpy as np
+from sklearn.preprocessing import StandardScaler
+from tensorflow import keras  # type: ignore
+
 
 class SimpleModel:
     def __init__(self, path):

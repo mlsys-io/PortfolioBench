@@ -8,9 +8,9 @@ Logic:
   Stop   : 4% fixed + trailing after 3% profit
 """
 
-from freqtrade.strategy import IStrategy, IntParameter, DecimalParameter
-from pandas import DataFrame
 import talib.abstract as ta
+from freqtrade.strategy import DecimalParameter, IntParameter, IStrategy
+from pandas import DataFrame
 
 
 class VolumeBreakoutStrategy(IStrategy):

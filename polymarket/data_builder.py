@@ -19,7 +19,7 @@ import pyarrow.feather as feather
 
 from polymarket.contracts import ContractMetadata, load_contracts
 from polymarket.settlement import load_btc_hourly, verify_settlements
-from polymarket.synthetic_prices import build_synthetic_ohlcv, _calibrate_sigma
+from polymarket.synthetic_prices import _calibrate_sigma, build_synthetic_ohlcv
 
 
 def _pair_to_filename(pair: str, timeframe: str = "1h") -> str:
@@ -136,7 +136,7 @@ def build_all_feathers(
 
             # For NO side: complement prices (close = 1 - yes_close), re-clamp
             if side == "no":
-                from polymarket.synthetic_prices import PRICE_FLOOR, PRICE_CEIL
+                from polymarket.synthetic_prices import PRICE_CEIL, PRICE_FLOOR
                 ohlcv_df = ohlcv_df.copy()
                 ohlcv_df["close"] = (1.0 - ohlcv_df["close"]).clip(PRICE_FLOOR, PRICE_CEIL)
                 ohlcv_df["open"] = (1.0 - ohlcv_df["open"]).clip(PRICE_FLOOR, PRICE_CEIL)
@@ -144,7 +144,8 @@ def build_all_feathers(
                 ohlcv_df["low"] = (1.0 - ohlcv_df["high"]).clip(PRICE_FLOOR, PRICE_CEIL)
                 # Patch settlement: NO settlement = 1.0 - YES settlement
                 no_settlement = 1.0 - contract.settlement
-                from polymarket.synthetic_prices import PRICE_FLOOR as PF, PRICE_CEIL as PC
+                from polymarket.synthetic_prices import PRICE_CEIL as PC
+                from polymarket.synthetic_prices import PRICE_FLOOR as PF
                 ohlcv_df.iloc[-1, ohlcv_df.columns.get_loc("close")] = PC if no_settlement == 1.0 else PF
 
             table = pa.Table.from_pandas(ohlcv_df, preserve_index=False)
@@ -169,7 +170,7 @@ def build_event_training_data(
     day_of_week: int = 0,
     hour_utc: int = 17,
     relative_strikes: list[float] | None = None,
-) -> "pd.DataFrame":
+) -> pd.DataFrame:
     """Build and save the training dataset for the event-probability model.
 
     Constructs synthetic weekly BTC binary-event samples from ``btc_csv_path``
@@ -188,7 +189,6 @@ def build_event_training_data(
     Returns:
         The constructed samples DataFrame (also saved to ``output_path``).
     """
-    import pandas as pd
     from polymarket.event_dataset import build_training_samples
 
     btc_df = load_btc_hourly(str(btc_csv_path))
@@ -235,7 +235,8 @@ def train_event_model(
         The trained model package dict.
     """
     import pandas as pd
-    from polymarket.event_model import train, save_model
+
+    from polymarket.event_model import save_model, train
 
     samples = pd.read_parquet(str(training_data_path))
     # Ensure T is UTC-aware after parquet round-trip
@@ -247,7 +248,7 @@ def train_event_model(
     model_package = train(samples, val_cutoff=val_cutoff, model_type=model_type)
     save_model(model_package, output_model_path)
 
-    print(f"\nModel metrics:")
+    print("\nModel metrics:")
     for split, m in model_package["metrics"].items():
         if m:
             print(
@@ -260,7 +261,7 @@ def train_event_model(
 def build_event_predictions(
     btc_csv_path: str | Path,
     model_path: str | Path,
-    contracts: "list[ContractMetadata]",
+    contracts: list[ContractMetadata],
     output_dir: str | Path,
 ) -> None:
     """Generate per-contract event probability CSVs for backtesting.

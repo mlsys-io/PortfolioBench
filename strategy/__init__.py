@@ -1,11 +1,11 @@
 from strategy.EmaCrossStrategy import EmaCrossStrategy
-from strategy.MacdAdxStrategy import MacdAdxStrategy
-from strategy.RsiBollingerStrategy import RsiBollingerStrategy
 from strategy.IchimokuCloudStrategy import IchimokuCloudStrategy
-from strategy.StochasticCciStrategy import StochasticCciStrategy
-from strategy.PolymarketMomentumStrategy import PolymarketMomentumStrategy
-from strategy.PolymarketMeanReversionStrategy import PolymarketMeanReversionStrategy
+from strategy.MacdAdxStrategy import MacdAdxStrategy
 from strategy.MlpSpeculativeStrategy import MlpSpeculativeStrategy
+from strategy.PolymarketMeanReversionStrategy import PolymarketMeanReversionStrategy
+from strategy.PolymarketMomentumStrategy import PolymarketMomentumStrategy
+from strategy.RsiBollingerStrategy import RsiBollingerStrategy
+from strategy.StochasticCciStrategy import StochasticCciStrategy
 
 strategy_list = [
     EmaCrossStrategy.__name__,

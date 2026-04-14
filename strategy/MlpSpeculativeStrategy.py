@@ -1,11 +1,14 @@
 import os
+
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
-from pandas import DataFrame
-from strategy.mlp_speculative_model.ml_utils.technical_analysis_tool import TecnicalAnalysis
-from strategy.mlp_speculative_model.ml_utils.ensemble import sample_model
-from strategy.mlp_speculative_model.ml_utils.data_process import DataProcess
 from freqtrade.strategy import IStrategy
+from pandas import DataFrame
+
+from strategy.mlp_speculative_model.ml_utils.data_process import DataProcess
+from strategy.mlp_speculative_model.ml_utils.ensemble import sample_model
+from strategy.mlp_speculative_model.ml_utils.technical_analysis_tool import TecnicalAnalysis
+
 
 class MlpSpeculativeStrategy(IStrategy):
     can_short = False

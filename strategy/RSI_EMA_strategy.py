@@ -1,10 +1,9 @@
 
 # --- Do not remove these libs ---
+# --------------------------------
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-# --------------------------------
-
-import talib.abstract as ta
 
 
 class RSI_EMA_strategy(IStrategy):
@@ -127,7 +126,7 @@ class RSI_EMA_strategy(IStrategy):
         dataframe.loc[
             (
                 ((dataframe['rsi'] > 60) & (dataframe['rsi'].shift(1) <= 60))
-                | ((dataframe['uptrend'] == False))
+                | (dataframe['uptrend'] == False)
             ),
             'exit_long'] = 1
         return dataframe

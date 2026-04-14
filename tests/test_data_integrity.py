@@ -1,7 +1,8 @@
 """Tests for data file integrity — verifies feather files have correct schema."""
 
-import os
 import glob
+import os
+
 import pandas as pd
 import pytest
 

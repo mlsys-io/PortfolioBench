@@ -13,9 +13,9 @@ Logic:
   Stop   : 5%
 """
 
-from freqtrade.strategy import IStrategy, IntParameter, DecimalParameter
-from pandas import DataFrame
 import talib.abstract as ta
+from freqtrade.strategy import DecimalParameter, IntParameter, IStrategy
+from pandas import DataFrame
 
 
 class SqueezeMomentumStrategy(IStrategy):

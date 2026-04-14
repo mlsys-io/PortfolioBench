@@ -11,10 +11,10 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Dict, List, Tuple, Any, Optional
+from typing import Any, Dict, List
+
 import numpy as np
 import pandas as pd
-
 
 logger = logging.getLogger(__name__)
 
@@ -209,7 +209,7 @@ class PipelineVerification:
             result = ValidationResult(
                 name="alpha_columns_present",
                 passed=True,
-                message=f"All expected alpha columns present",
+                message="All expected alpha columns present",
                 details={"expected_columns": expected_columns}
             )
         else:
@@ -245,7 +245,7 @@ class PipelineVerification:
             result = ValidationResult(
                 name="alpha_columns_no_nan",
                 passed=False,
-                message=f"Found NaN values in alpha columns",
+                message="Found NaN values in alpha columns",
                 details=nan_summary
             )
         checks.append(result)
@@ -408,7 +408,7 @@ class PipelineVerification:
         result = ValidationResult(
             name="weight_concentration",
             passed=True,
-            message=f"Portfolio concentration metrics computed",
+            message="Portfolio concentration metrics computed",
             details={
                 "mean_hhi": round(hhi, 4),
                 "n_assets": n_assets,

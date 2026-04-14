@@ -76,12 +76,12 @@ def run_workflow_cli(
         Backtest metrics dictionary.
     """
     from adapters.portbench.runner import LocalWorkflowRunner
-    from workflow.executor import register_all_handlers
     from portfolio.PortfolioManagement import (
-        load_pair_data,
         backtest_portfolio,
         compute_metrics,
+        load_pair_data,
     )
+    from workflow.executor import register_all_handlers
 
     path = Path(workflow_file)
     if not path.is_file():

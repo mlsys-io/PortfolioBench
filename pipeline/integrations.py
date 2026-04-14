@@ -13,11 +13,12 @@ Demonstrates how to:
 from __future__ import annotations
 
 import json
+import logging
 import pickle
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List
+
 import pandas as pd
-import logging
 
 logger = logging.getLogger(__name__)
 

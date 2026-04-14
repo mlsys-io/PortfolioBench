@@ -1,7 +1,8 @@
 """Strategy 9: Parabolic SAR Trend Follow"""
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
+
 
 class ParabolicSarStrategy(IStrategy):
     timeframe = "5m"

@@ -1,7 +1,8 @@
 """Strategy 3: Bollinger Band Bounce"""
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
+
 
 class BollingerBounceStrategy(IStrategy):
     timeframe = "5m"

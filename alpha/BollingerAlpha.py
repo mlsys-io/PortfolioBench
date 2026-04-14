@@ -6,9 +6,9 @@ relative to the bands (0 = lower band, 1 = upper band).
 """
 
 import talib.abstract as ta
+from freqtrade.strategy.parameters import IntParameter
 
 from alpha.interface import IAlpha
-from freqtrade.strategy.parameters import IntParameter
 
 
 class BollingerAlpha(IAlpha):

@@ -1,12 +1,13 @@
+import logging
+from datetime import datetime
+from typing import Optional
+
+import numpy as np
+import pandas as pd
 from freqtrade.persistence.trade_model import Trade
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import pandas as pd
-import numpy as np
-from datetime import datetime
-from typing import Optional
 from scipy.optimize import minimize
-import logging
 
 logger = logging.getLogger(__name__)
 
