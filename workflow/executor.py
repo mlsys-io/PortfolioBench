@@ -14,9 +14,8 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import Any, Dict, List
+from typing import Any, Dict
 
-import numpy as np
 import pandas as pd
 
 # ---------------------------------------------------------------------------
@@ -29,21 +28,17 @@ _FT_ROOT = os.path.join(_PROJECT_ROOT, "freqtrade")
 if os.path.isdir(os.path.join(_FT_ROOT, "freqtrade")) and _FT_ROOT not in sys.path:
     sys.path.insert(0, _FT_ROOT)
 
-from alpha.SimpleEmaFactors import EmaAlpha  # noqa: E402
-from alpha.RsiAlpha import RsiAlpha  # noqa: E402
-from alpha.MacdAlpha import MacdAlpha  # noqa: E402
 from alpha.BollingerAlpha import BollingerAlpha  # noqa: E402
-
+from alpha.MacdAlpha import MacdAlpha  # noqa: E402
+from alpha.RsiAlpha import RsiAlpha  # noqa: E402
+from alpha.SimpleEmaFactors import EmaAlpha  # noqa: E402
 from portfolio.PortfolioManagement import (  # noqa: E402
-    load_pair_data,
     align_close_prices,
-    ema_cross_signals,
+    blend_strategy_weights,
     build_ema_position_series,
     calculate_ons_weights,
+    ema_cross_signals,
     equal_weight_allocation,
-    blend_strategy_weights,
-    backtest_portfolio,
-    compute_metrics,
 )
 
 # ---------------------------------------------------------------------------

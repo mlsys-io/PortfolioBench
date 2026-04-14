@@ -14,12 +14,11 @@ Usage:
     python benchmark.py --export report.json   # also write JSON results
 """
 
+import argparse
+import json
 import os
 import sys
-import json
 import time
-import traceback
-import argparse
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
@@ -40,8 +39,8 @@ if os.path.isdir(os.path.join(_FT_ROOT, "freqtrade")) and _FT_ROOT not in sys.pa
 # ---------------------------------------------------------------------------
 try:
     from freqtrade.commands.optimize_commands import setup_optimize_configuration
-    from freqtrade.optimize.backtesting import Backtesting
     from freqtrade.enums import RunMode
+    from freqtrade.optimize.backtesting import Backtesting
     FREQTRADE_AVAILABLE = True
 except ImportError as e:
     FREQTRADE_AVAILABLE = False
@@ -481,10 +480,11 @@ def run_alpha_smoke_test() -> Dict[str, Any]:
     t0 = time.time()
     try:
         import pandas as pd
-        from alpha.SimpleEmaFactors import EmaAlpha
-        from alpha.RsiAlpha import RsiAlpha
-        from alpha.MacdAlpha import MacdAlpha
+
         from alpha.BollingerAlpha import BollingerAlpha
+        from alpha.MacdAlpha import MacdAlpha
+        from alpha.RsiAlpha import RsiAlpha
+        from alpha.SimpleEmaFactors import EmaAlpha
 
         # Load one pair's data
         filepath = os.path.join(DATA_DIR, "BTC_USDT-1d.feather")
@@ -564,8 +564,9 @@ def run_data_integrity_check() -> Dict[str, Any]:
     }
     t0 = time.time()
     try:
-        import pandas as pd
         from pathlib import Path
+
+        import pandas as pd
 
         data_path = Path(DATA_DIR)
         feather_files = sorted(data_path.glob("*.feather"))

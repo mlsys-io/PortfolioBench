@@ -1,16 +1,16 @@
 
 # --- Do not remove these libs ---
-from freqtrade.strategy import IStrategy
-from pandas import DataFrame
-# --------------------------------
-
-from freqtrade.strategy import (DecimalParameter)
-
-import pandas as pd
-import numpy as np
-import joblib
-from pathlib import Path
 from datetime import timedelta
+from pathlib import Path
+
+import joblib
+import numpy as np
+import pandas as pd
+
+# --------------------------------
+from freqtrade.strategy import DecimalParameter, IStrategy
+from pandas import DataFrame
+
 
 class beta_factors_model(IStrategy):
 

@@ -1,7 +1,8 @@
 """Strategy: VWAP Reversion Strategy"""
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
+
 
 class VwapReversionStrategy(IStrategy):
     timeframe = "5m"

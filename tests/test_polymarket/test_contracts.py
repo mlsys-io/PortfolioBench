@@ -1,6 +1,5 @@
 """Tests for polymarket.contracts — metadata loading and normalisation."""
 
-import json
 import tempfile
 from pathlib import Path
 

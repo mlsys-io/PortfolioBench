@@ -1,8 +1,7 @@
-import sys
 import ccxt
 import ccxt.async_support
 import ccxt.pro
-from freqtrade.exchange.common import SUPPORTED_EXCHANGES, MAP_EXCHANGE_CHILDCLASS
+from freqtrade.exchange.common import MAP_EXCHANGE_CHILDCLASS, SUPPORTED_EXCHANGES
 
 CUSTOM_EXCHANGES = ['portfoliobench', 'polymarket']
 
@@ -23,5 +22,6 @@ for name in CUSTOM_EXCHANGES:
     MAP_EXCHANGE_CHILDCLASS[name] = name
 
 from freqtrade.main import main
+
 if __name__ == '__main__':
     main()

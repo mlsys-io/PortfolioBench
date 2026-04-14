@@ -11,10 +11,10 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
+from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from enum import Enum
 
 
 class AlphaType(str, Enum):
@@ -210,7 +210,7 @@ class PipelineConfig:
             raise ImportError("PyYAML required for YAML config support. "
                             "Install with: pip install PyYAML")
         
-        with open(filepath, 'r') as f:
+        with open(filepath) as f:
             data = yaml.safe_load(f)
         return cls.from_dict(data)
 

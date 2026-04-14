@@ -1,7 +1,8 @@
 """Strategy: Balance of Power Trend Strategy"""
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
+
 
 class BopTrendStrategy(IStrategy):
     timeframe = "5m"

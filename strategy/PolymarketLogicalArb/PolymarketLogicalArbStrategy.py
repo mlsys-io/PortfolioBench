@@ -1,13 +1,12 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-import re
 
 import numpy as np
 import pandas as pd
-
 from freqtrade.strategy import IStrategy
 
 """

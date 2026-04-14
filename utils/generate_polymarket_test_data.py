@@ -14,11 +14,11 @@ Usage:
     python utils/generate_polymarket_test_data.py
 """
 
+from datetime import datetime
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from pathlib import Path
-from datetime import datetime
-
 
 # ---------------------------------------------------------------------------
 # Event definitions for synthetic data

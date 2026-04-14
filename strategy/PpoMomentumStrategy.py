@@ -1,7 +1,8 @@
 """Strategy: PPO Momentum Strategy"""
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
+
 
 class PpoMomentumStrategy(IStrategy):
     timeframe = "5m"

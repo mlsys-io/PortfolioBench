@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from polymarket.event_dataset import build_training_samples
 from polymarket.event_features import (
     ALL_FEATURE_COLS,
     BTC_FEATURE_COLS,
@@ -18,14 +19,12 @@ from polymarket.event_features import (
     add_contract_features,
     build_feature_matrix,
 )
-from polymarket.event_dataset import build_training_samples
 from polymarket.event_model import (
     load_model,
     predict_contract_probs,
     save_model,
     train,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

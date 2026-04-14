@@ -1,8 +1,10 @@
+from pathlib import Path
+
+import numpy as np
 import torch
 from torch import nn
-from torch.utils.data import Dataset, DataLoader
-import numpy as np
-from pathlib import Path
+from torch.utils.data import DataLoader, Dataset
+
 
 class AR(nn.Module):
     def __init__(self, lag):

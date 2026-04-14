@@ -1,7 +1,8 @@
 """Strategy: ATR Trailing Stop Strategy"""
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
+
 
 class AtrTrailingStopStrategy(IStrategy):
     timeframe = "5m"

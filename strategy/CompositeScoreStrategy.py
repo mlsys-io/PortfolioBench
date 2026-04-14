@@ -1,7 +1,8 @@
 """Strategy 13: Composite Score Strategy"""
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
+
 
 class CompositeScoreStrategy(IStrategy):
     timeframe = "5m"

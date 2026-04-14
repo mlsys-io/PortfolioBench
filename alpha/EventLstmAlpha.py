@@ -1,8 +1,10 @@
-import torch
 import numpy as np
-from pandas import DataFrame
-from alpha.interface import IAlpha
+import torch
 import torch.nn as nn
+from pandas import DataFrame
+
+from alpha.interface import IAlpha
+
 
 class EventLstmModel(nn.Module):
     def __init__(self):

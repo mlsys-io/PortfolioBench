@@ -1,12 +1,11 @@
-import pandas as pd
 from datetime import datetime
-from pandas import DataFrame
 
+import pandas as pd
 from freqtrade.strategy import (
-    IStrategy,
     IntParameter,
+    IStrategy,
 )
-
+from pandas import DataFrame
 from technical import qtpylib
 
 

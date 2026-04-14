@@ -1,7 +1,8 @@
 """Strategy 11: Triple EMA Trend"""
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
+
 
 class TripleEmaStrategy(IStrategy):
     timeframe = "5m"

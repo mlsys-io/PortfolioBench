@@ -1,7 +1,8 @@
 """Strategy: Trix Signal Strategy"""
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
+
 
 class TrixSignalStrategy(IStrategy):
     timeframe = "5m"

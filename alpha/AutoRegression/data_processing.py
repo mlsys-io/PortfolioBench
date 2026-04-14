@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+
 def load_data(data_path: str = "./binance/BTC_USDT-5m.feather",
               start_date: str = "2021-01-01"):
     df = pd.read_feather(data_path)

@@ -1,15 +1,15 @@
 # --- Do not remove these libs ---
-from freqtrade.strategy import IStrategy
-from typing import Optional
-from pandas import DataFrame
-# --------------------------------
-
-from freqtrade.strategy import DecimalParameter, IntParameter
-import talib.abstract as ta
-import pandas as pd
-import numpy as np
-from pathlib import Path
 from datetime import timedelta
+from pathlib import Path
+from typing import Optional
+
+import numpy as np
+import pandas as pd
+import talib.abstract as ta
+
+# --------------------------------
+from freqtrade.strategy import DecimalParameter, IntParameter, IStrategy
+from pandas import DataFrame
 
 
 class adaptive_trend(IStrategy):

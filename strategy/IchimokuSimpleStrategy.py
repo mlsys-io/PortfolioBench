@@ -1,7 +1,8 @@
 """Strategy: Simple Ichimoku Strategy"""
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
+
 
 class IchimokuSimpleStrategy(IStrategy):
     timeframe = "5m"

@@ -1,7 +1,9 @@
-import pandas as pd
-from strategy.mlp_speculative_model.ml_utils.technical_analysis_tool import TecnicalAnalysis
-from sklearn.preprocessing import StandardScaler
 import numpy as np
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+
+from strategy.mlp_speculative_model.ml_utils.technical_analysis_tool import TecnicalAnalysis
+
 features = [
     "z_score",
     "rsi",

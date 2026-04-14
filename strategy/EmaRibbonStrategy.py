@@ -1,7 +1,8 @@
 """Strategy: EMA Ribbon Strategy"""
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
+
 
 class EmaRibbonStrategy(IStrategy):
     timeframe = "5m"

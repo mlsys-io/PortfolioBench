@@ -3,9 +3,10 @@
 import os
 import re
 
+
 def fix_utc_imports(filepath):
     """Fix UTC imports in a Python file for Python 3.10 compatibility."""
-    with open(filepath, 'r', encoding='utf-8') as f:
+    with open(filepath, encoding='utf-8') as f:
         content = f.read()
     
     # Check if already fixed
@@ -92,7 +93,7 @@ for root, dirs, files in os.walk(freqtrade_path):
         if file.endswith('.py'):
             filepath = os.path.join(root, file)
             try:
-                with open(filepath, 'r', encoding='utf-8') as f:
+                with open(filepath, encoding='utf-8') as f:
                     content = f.read()
                     if 'from datetime import' in content and 'UTC' in content:
                         attempted += 1

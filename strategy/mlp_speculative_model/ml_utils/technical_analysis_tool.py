@@ -1,5 +1,5 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 import talib as talib
 
 BUY = -1
@@ -12,7 +12,7 @@ class TecnicalAnalysis:
     @staticmethod
     def compute_oscillators(data):
         log_return = np.log(data['close']) - np.log(data['close'].shift(1))
-        data['z_score'] = (((log_return - log_return.rolling(20).mean()) / log_return.rolling(20).std()))
+        data['z_score'] = ((log_return - log_return.rolling(20).mean()) / log_return.rolling(20).std())
         data['rsi'] = ((talib.RSI(data['close'])) / 100)
         upper_band, _, lower_band = talib.BBANDS(data['close'], nbdevup=2, nbdevdn=2, matype=0)
         data['boll'] = ((data['close'] - lower_band) / (upper_band - lower_band))

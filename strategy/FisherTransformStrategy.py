@@ -1,8 +1,9 @@
 """Strategy: Fisher Transform Strategy"""
+import numpy as np
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
-import numpy as np
+
 
 class FisherTransformStrategy(IStrategy):
     timeframe = "5m"

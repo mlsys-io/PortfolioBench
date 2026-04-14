@@ -1,14 +1,13 @@
 from datetime import datetime
-from pandas import DataFrame
 
 from freqtrade.strategy import (
-    IStrategy,
     IntParameter,
+    IStrategy,
 )
+from pandas import DataFrame
+from technical import qtpylib
 
 from alpha.SimpleEmaFactors import EmaAlpha
-
-from technical import qtpylib
 
 
 class EmaCrossStrategy(IStrategy):

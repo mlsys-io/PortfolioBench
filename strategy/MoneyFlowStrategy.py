@@ -1,7 +1,8 @@
 """Strategy 10: Money Flow Index"""
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
+
 
 class MoneyFlowStrategy(IStrategy):
     timeframe = "5m"

@@ -6,13 +6,14 @@ import pytest
 
 talib = pytest.importorskip("talib", reason="TA-Lib C library not installed")
 
-from alpha.interface import IAlpha, AlphaEvaluator
-from alpha.SimpleEmaFactors import EmaAlpha
-from alpha.RsiAlpha import RsiAlpha
-from alpha.MacdAlpha import MacdAlpha
-from alpha.BollingerAlpha import BollingerAlpha
 from alpha.AutoregressionAlpha import AutoregressionAlpha
-from alpha.EventLstmAlpha import EventLstmAlpha # type: ignore
+from alpha.BollingerAlpha import BollingerAlpha
+from alpha.EventLstmAlpha import EventLstmAlpha  # type: ignore
+from alpha.interface import AlphaEvaluator, IAlpha
+from alpha.MacdAlpha import MacdAlpha
+from alpha.RsiAlpha import RsiAlpha
+from alpha.SimpleEmaFactors import EmaAlpha
+
 
 def _make_ohlcv(n=100):
     """Create a minimal synthetic OHLCV DataFrame."""
