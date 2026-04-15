@@ -45,6 +45,12 @@ GDRIVE_FILES = {
         "description": "Polymarket prediction-market contracts",
         "output_dirs": ["user_data/data/polymarket"],
     },
+    "kalshi": {
+        "folder_id": "1DDo6uumqlsHeO4Ikvbo8LleEvWrXBKnP",
+        "folder_url": "https://drive.google.com/drive/folders/1DDo6uumqlsHeO4Ikvbo8LleEvWrXBKnP",
+        "description": "Kalshi prediction-market contracts",
+        "output_dirs": ["user_data/data/kalshi"],
+    },
 }
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent

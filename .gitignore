@@ -17,6 +17,7 @@ user_data/*
 user_data/data/usstock/
 user_data/data/polymarket/
 user_data/data/portfoliobench/
+user_data/data/kalshi/
 # Generated ML artifacts (regenerable via scripts/prepare_event_model.py)
 user_data/data/polymarket_ml/
 # Local development data, model checkpoints, and notebooks
@@ -30,6 +31,7 @@ freqtrade-plot.html
 freqtrade-profit-plot.html
 freqtrade/rpc/api_server/ui/*
 build_helpers/ta-lib/*
+kalshi/*.parquet
 
 # Macos related
 .DS_Store
