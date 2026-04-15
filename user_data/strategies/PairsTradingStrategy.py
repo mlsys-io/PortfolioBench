@@ -1,16 +1,11 @@
-# pragma pylint: disable=missing-docstring, invalid-name, pointless-string-statement
-# flake8: noqa: F401
+# pragma pylint: disable=missing-docstring, invalid-name
+# flake8: noqa
 # isort: skip_file
-# --- Do not remove these imports ---
-import numpy as np
-import pandas as pd
+
 from pandas import DataFrame
-from typing import Optional, Union
+from typing import Optional
 
 from freqtrade.strategy import IStrategy
-import talib.abstract as ta
-from technical import qtpylib
-
 import statsmodels.api as sm
 
 class PairsTradingStrategy(IStrategy):
