@@ -3,7 +3,6 @@
 # isort: skip_file
 
 from pandas import DataFrame
-from typing import Optional
 
 from freqtrade.strategy import IStrategy
 import statsmodels.api as sm
