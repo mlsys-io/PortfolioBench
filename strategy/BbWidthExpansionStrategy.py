@@ -1,7 +1,8 @@
 """Strategy: Bollinger Band Width Expansion Strategy"""
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
+
 
 class BbWidthExpansionStrategy(IStrategy):
     timeframe = "5m"

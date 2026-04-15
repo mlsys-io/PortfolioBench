@@ -1,13 +1,12 @@
 from datetime import datetime
-from pandas import DataFrame
-
-from freqtrade.strategy import (
-    IStrategy,
-    DecimalParameter,
-    IntParameter,
-)
 
 import talib.abstract as ta
+from freqtrade.strategy import (
+    DecimalParameter,
+    IntParameter,
+    IStrategy,
+)
+from pandas import DataFrame
 from technical import qtpylib
 
 

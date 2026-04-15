@@ -1,0 +1,70 @@
+{
+  "name": "Simple EMA Cross Strategy",
+  "version": "1.0",
+  "description": "Basic EMA crossover strategy on crypto pairs with 4-hour timeframe",
+  
+  "alpha": [
+    {
+      "type": "ema",
+      "params": {
+        "fast_period": 12,
+        "slow_period": 26,
+        "exit_period": 9
+      }
+    }
+  ],
+  
+  "strategies": [
+    {
+      "type": "ema_cross",
+      "alpha_factors": [
+        { "type": "ema" }
+      ],
+      "params": {}
+    }
+  ],
+  
+  "portfolio": {
+    "algorithm": "equal_weight",
+    "strategies": [
+      { "type": "ema_cross" }
+    ],
+    "strategy_weights": {
+      "ema_cross": 1.0
+    },
+    "rebalance_frequency": "daily",
+    "params": {}
+  },
+  
+  "backtest": {
+    "timerange": "20250101-20250601",
+    "timeframe": "4h",
+    "pairs": [
+      "BTC/USDT",
+      "ETH/USDT",
+      "SOL/USDT",
+      "XRP/USDT"
+    ],
+    "initial_capital": 10000.0,
+    "dry_run_wallet": null,
+    "enable_trading_mode": false
+  },
+  
+  "data": {
+    "data_dir": "./user_data/data/usstock",
+    "exchange": "portfoliobench",
+    "cache_dir": "./user_data/cache"
+  },
+  
+  "enable_validation": true,
+  "validate_data_integrity": true,
+  "validate_alpha_signals": true,
+  "validate_strategy_signals": true,
+  "validate_portfolio_weights": true,
+  
+  "output_dir": "./output/simple_ema_cross",
+  "export_weights": true,
+  "export_backtest_results": true,
+  "export_metrics": true,
+  "verbose": false
+}

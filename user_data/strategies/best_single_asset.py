@@ -1,6 +1,6 @@
+import pandas as pd
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import pandas as pd
 
 
 class BestSingleAssetPortfolio(IStrategy):

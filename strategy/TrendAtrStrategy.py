@@ -10,9 +10,9 @@ Logic:
 Suitable for: crypto / stocks, 4h timeframe
 """
 
-from freqtrade.strategy import IStrategy, DecimalParameter, IntParameter
-from pandas import DataFrame
 import talib.abstract as ta
+from freqtrade.strategy import DecimalParameter, IntParameter, IStrategy
+from pandas import DataFrame
 
 
 class TrendAtrStrategy(IStrategy):

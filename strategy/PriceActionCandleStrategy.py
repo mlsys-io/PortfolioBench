@@ -12,9 +12,9 @@ Logic:
   Stop   : 4%
 """
 
-from freqtrade.strategy import IStrategy, DecimalParameter
-from pandas import DataFrame
 import talib.abstract as ta
+from freqtrade.strategy import DecimalParameter, IStrategy
+from pandas import DataFrame
 
 
 class PriceActionCandleStrategy(IStrategy):

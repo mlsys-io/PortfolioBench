@@ -1,7 +1,8 @@
 """Strategy 5: Stochastic Oversold Bounce"""
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
+
 
 class StochasticOversoldStrategy(IStrategy):
     timeframe = "5m"

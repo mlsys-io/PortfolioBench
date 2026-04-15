@@ -1,4 +1,5 @@
 import pandas as pd
+
 from strategy.mlp_speculative_model.ml_utils.technical_analysis_tool import TecnicalAnalysis
 
 BUY = -1

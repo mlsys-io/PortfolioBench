@@ -13,13 +13,13 @@ The strategy estimates "fair probability" using momentum-adjusted price
 and sizes positions based on perceived edge vs market price.
 """
 
-import pandas as pd
+import logging
 from datetime import datetime
 from typing import Optional
-import logging
 
-from freqtrade.strategy import IStrategy
+import pandas as pd
 from freqtrade.persistence import Trade
+from freqtrade.strategy import IStrategy
 
 logger = logging.getLogger(__name__)
 

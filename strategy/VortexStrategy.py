@@ -1,7 +1,8 @@
 """Strategy: Vortex Indicator Strategy"""
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
+
 
 class VortexStrategy(IStrategy):
     timeframe = "5m"

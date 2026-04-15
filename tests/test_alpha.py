@@ -6,11 +6,13 @@ import pytest
 
 talib = pytest.importorskip("talib", reason="TA-Lib C library not installed")
 
-from alpha.interface import IAlpha
-from alpha.SimpleEmaFactors import EmaAlpha
-from alpha.RsiAlpha import RsiAlpha
-from alpha.MacdAlpha import MacdAlpha
+from alpha.AutoregressionAlpha import AutoregressionAlpha
 from alpha.BollingerAlpha import BollingerAlpha
+from alpha.EventLstmAlpha import EventLstmAlpha  # type: ignore
+from alpha.interface import AlphaEvaluator, IAlpha
+from alpha.MacdAlpha import MacdAlpha
+from alpha.RsiAlpha import RsiAlpha
+from alpha.SimpleEmaFactors import EmaAlpha
 
 
 def _make_ohlcv(n=100):
@@ -159,3 +161,97 @@ class TestBollingerAlpha:
         valid = result["bb_pctb"].dropna()
         # Mean %B across a random walk should be roughly centered around 0.5
         assert 0.2 < valid.mean() < 0.8
+
+class TestAutoregressionAlpha:
+    def test_process_adds_ar_pred_column(self):
+        df = _make_ohlcv(200)
+        df = df[["date", "close"]].copy()
+        result = AutoregressionAlpha(df).process()
+        assert "ar_pred" in result.columns, "Missing ar_pred column"
+
+    def test_ar_pred_nan_for_short_series(self):
+        df = _make_ohlcv(50)
+        df = df[["date", "close"]].copy()
+        result = AutoregressionAlpha(df).process()
+        assert result["ar_pred"].isna().all(), "ar_pred should be NaN for short series"
+
+    def test_ar_pred_has_valid_values(self):
+        df = _make_ohlcv(200)
+        df = df[["date", "close"]].copy()
+        result = AutoregressionAlpha(df).process()
+        ar_pred = result["ar_pred"].iloc[91:]
+        assert ar_pred.notna().any(), "ar_pred should have valid predictions after lag"
+
+class AlphaStub(IAlpha):
+    def process(self):
+        df = self.dataframe.copy()
+        df["alpha"] = df["close"].pct_change()
+        return df
+
+class TestAlphaInformationEvaluation:
+    def test_evaluate_information_coefficient_returns_dict(self):
+        df = _make_ohlcv(120)
+        evaluator = AlphaEvaluator(df, AlphaStub)
+        result = evaluator.evaluate_information_coefficient(["alpha"])
+        assert isinstance(result, dict)
+        expected_keys = [("alpha", t) for t in [1, 5, 10, 20, 90]]
+        for key in expected_keys:
+            assert key in result
+            assert isinstance(result[key], (float, type(None)))
+
+    def test_ic_values_are_finite_or_nan(self):
+        df = _make_ohlcv(120)
+        evaluator = AlphaEvaluator(df, AlphaStub)
+        result = evaluator.evaluate_information_coefficient(["alpha"])
+        for ic in result.values():
+            assert (ic is None) or (isinstance(ic, float))
+
+    def test_ic_on_constant_alpha_is_nan(self):
+        class ConstAlpha(IAlpha):
+            def process(self):
+                df = self.dataframe.copy()
+                df["alpha"] = 1.0
+                return df
+        df = _make_ohlcv(120)
+        evaluator = AlphaEvaluator(df, ConstAlpha)
+        result = evaluator.evaluate_information_coefficient(["alpha"])
+        for ic in result.values():
+            assert ic != ic
+
+class TestEventLstmAlpha:
+    @pytest.mark.slow
+    def test_event_lstm_alpha_with_fake_data(self):
+        # --- Generate fake OHLCV data ---
+        length = 100
+        np.random.seed(42)
+        df = pd.DataFrame({
+            "open": np.random.rand(length),
+            "high": np.random.rand(length),
+            "low": np.random.rand(length),
+            "close": np.random.rand(length),
+            "volume": np.random.rand(length)
+        })
+
+        # --- Path to your real trained LSTM model ---
+        model_path = "./alpha/event_stacked_lstm.pth"
+        
+        # --- Sequence length (must match trained model) ---
+        seq_len = 64
+
+        # --- Instantiate alpha using real model ---
+        alpha = EventLstmAlpha(df, model_path=model_path, seq_len=seq_len)
+        result = alpha.process()
+
+        # --- Assertions ---
+        # Column must exist
+        assert "lstm_pred" in result.columns, "Missing 'lstm_pred' column"
+        
+        # First seq_len rows will have NaN (not enough history)
+        assert result["lstm_pred"].iloc[:seq_len].isna().all()
+
+        # Predictions after seq_len should be numbers
+        valid_preds = result["lstm_pred"].iloc[seq_len:]
+        assert valid_preds.notna().all(), "Predictions should be filled"
+        
+        # Predictions should be within [0,1] because close prices are normalized
+        assert (valid_preds >= 0).all() and (valid_preds <= 1).all()

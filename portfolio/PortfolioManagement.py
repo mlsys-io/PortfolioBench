@@ -15,9 +15,10 @@ Usage:
 
 import os
 import sys
+from typing import Dict, List, Tuple
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Tuple
 from scipy.optimize import minimize
 
 # ---------------------------------------------------------------------------
@@ -65,7 +66,7 @@ def load_pair_data(data_dir: str, pairs: List[str], timeframe: str = "1d") -> Di
         df["date"] = pd.to_datetime(df["date"], utc=True)
         df = df.sort_values("date").reset_index(drop=True)
         pair_data[pair] = df
-        print(f"[DATA] Loaded {pair}: {len(df)} rows, {df['date'].iloc[0].date()} → {df['date'].iloc[-1].date()}")
+        print(f"[DATA] Loaded {pair}: {len(df)} rows, {df['date'].iloc[0].date()} -> {df['date'].iloc[-1].date()}")
     return pair_data
 
 

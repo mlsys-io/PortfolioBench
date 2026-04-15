@@ -1,7 +1,8 @@
 """Strategy 12: Donchian Channel Breakout"""
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
+
 
 class DonchianBreakoutStrategy(IStrategy):
     timeframe = "5m"

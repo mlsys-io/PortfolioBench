@@ -1,6 +1,7 @@
 """Tests for the standalone portfolio pipeline (portfolio/PortfolioManagement.py)."""
 
 import os
+
 import numpy as np
 import pandas as pd
 import pytest

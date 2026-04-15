@@ -1,0 +1,299 @@
+{
+  "pipeline_name": "Simple EMA Cross",
+  "start_time": "2026-03-25T12:54:46.173961",
+  "end_time": "",
+  "duration_s": 0.0,
+  "stages": {
+    "load_data": {
+      "name": "load_data",
+      "status": "success",
+      "duration_s": 0,
+      "data_summary": {
+        "pairs_loaded": 4
+      },
+      "errors": [],
+      "warnings": []
+    },
+    "generate_alpha": {
+      "name": "generate_alpha",
+      "status": "success",
+      "duration_s": 0,
+      "data_summary": {
+        "alphas_applied": 1
+      },
+      "errors": [],
+      "warnings": []
+    },
+    "compute_strategy_signals": {
+      "name": "compute_strategy_signals",
+      "status": "success",
+      "duration_s": 0,
+      "data_summary": {
+        "strategies": 1
+      },
+      "errors": [],
+      "warnings": []
+    },
+    "construct_portfolio": {
+      "name": "construct_portfolio",
+      "status": "success",
+      "duration_s": 0,
+      "data_summary": {
+        "assets": 4,
+        "rows": 100
+      },
+      "errors": [],
+      "warnings": []
+    },
+    "backtest": {
+      "name": "backtest",
+      "status": "success",
+      "duration_s": 0,
+      "data_summary": {
+        "total_return_pct": 5.99,
+        "annualised_return_pct": 23.68,
+        "annualised_sharpe": 1.169,
+        "max_drawdown_pct": -10.02,
+        "n_bars": 100
+      },
+      "errors": [],
+      "warnings": []
+    }
+  },
+  "metrics": {
+    "total_return_pct": 5.99,
+    "annualised_return_pct": 23.68,
+    "annualised_sharpe": 1.169,
+    "max_drawdown_pct": -10.02,
+    "n_bars": 100
+  },
+  "validation": {
+    "total": 13,
+    "passed": 12,
+    "failed": 1,
+    "pass_rate": 92.3,
+    "results": [
+      {
+        "name": "alpha_columns_present",
+        "passed": true,
+        "message": "All expected alpha columns present",
+        "details": {
+          "expected_columns": [
+            "ema_fast",
+            "ema_slow",
+            "mean-volume",
+            "ema_exit"
+          ]
+        }
+      },
+      {
+        "name": "alpha_columns_no_nan",
+        "passed": false,
+        "message": "Found NaN values in alpha columns",
+        "details": {
+          "BTC/USDT": {
+            "ema_fast": 11,
+            "ema_slow": 25,
+            "mean-volume": 19,
+            "ema_exit": 5
+          },
+          "ETH/USDT": {
+            "ema_fast": 11,
+            "ema_slow": 25,
+            "mean-volume": 19,
+            "ema_exit": 5
+          },
+          "SOL/USDT": {
+            "ema_fast": 11,
+            "ema_slow": 25,
+            "mean-volume": 19,
+            "ema_exit": 5
+          },
+          "XRP/USDT": {
+            "ema_fast": 11,
+            "ema_slow": 25,
+            "mean-volume": 19,
+            "ema_exit": 5
+          }
+        }
+      },
+      {
+        "name": "alpha_signal_ranges",
+        "passed": true,
+        "message": "Signal values in valid ranges",
+        "details": {
+          "pairs_checked": 4
+        }
+      },
+      {
+        "name": "strategy_signals_binary",
+        "passed": true,
+        "message": "All strategy signals are binary (0/1)",
+        "details": {
+          "pairs_checked": 4
+        }
+      },
+      {
+        "name": "strategy_signal_density",
+        "passed": true,
+        "message": "Strategy signal statistics computed",
+        "details": {
+          "BTC/USDT_ema_cross": {
+            "count": 41,
+            "pct": 41.0
+          },
+          "ETH/USDT_ema_cross": {
+            "count": 24,
+            "pct": 24.0
+          },
+          "SOL/USDT_ema_cross": {
+            "count": 24,
+            "pct": 24.0
+          },
+          "XRP/USDT_ema_cross": {
+            "count": 3,
+            "pct": 3.0
+          }
+        }
+      },
+      {
+        "name": "weights_sum_to_one",
+        "passed": true,
+        "message": "All weight rows sum to 1.0 (\u00b11e-06)",
+        "details": {
+          "min_sum": 1.0,
+          "max_sum": 1.0,
+          "mean_sum": 1.0
+        }
+      },
+      {
+        "name": "weights_in_bounds",
+        "passed": true,
+        "message": "All weights in [0, 1]",
+        "details": {
+          "min_weight": 0.25,
+          "max_weight": 0.25
+        }
+      },
+      {
+        "name": "weight_concentration",
+        "passed": true,
+        "message": "Portfolio concentration metrics computed",
+        "details": {
+          "mean_hhi": 0.25,
+          "n_assets": 4,
+          "equal_weight_hhi": 0.25,
+          "concentration_ratio": 1.0
+        }
+      },
+      {
+        "name": "data_pairs_present",
+        "passed": true,
+        "message": "All 4 pairs loaded",
+        "details": {
+          "count": 4
+        }
+      },
+      {
+        "name": "data_completeness",
+        "passed": true,
+        "message": "No missing values in OHLCV data",
+        "details": {
+          "pairs_checked": 4
+        }
+      },
+      {
+        "name": "data_date_alignment",
+        "passed": true,
+        "message": "Found 100 common dates across all pairs",
+        "details": {
+          "common_dates": 100
+        }
+      },
+      {
+        "name": "data_ohlc_relationships",
+        "passed": true,
+        "message": "OHLC relationships valid (H>=L, Close between H and L)",
+        "details": {
+          "pairs_checked": 4
+        }
+      },
+      {
+        "name": "data_volume_positive",
+        "passed": true,
+        "message": "All volume values > 0",
+        "details": {
+          "pairs_checked": 4
+        }
+      }
+    ]
+  },
+  "config": {
+    "name": "Simple EMA Cross",
+    "version": "1.0",
+    "description": "Basic EMA crossover strategy on 4h timeframe",
+    "alpha": [
+      {
+        "type": "ema",
+        "params": {}
+      }
+    ],
+    "strategies": [
+      {
+        "type": "ema_cross",
+        "alpha_factors": [
+          {
+            "type": "ema",
+            "params": {}
+          }
+        ],
+        "params": {}
+      }
+    ],
+    "portfolio": {
+      "algorithm": "equal_weight",
+      "strategies": [
+        {
+          "type": "ema_cross",
+          "alpha_factors": [],
+          "params": {}
+        }
+      ],
+      "strategy_weights": {
+        "EMA_CROSS": 1.0
+      },
+      "rebalance_frequency": "daily",
+      "params": {}
+    },
+    "backtest": {
+      "timerange": "20250101-20250601",
+      "timeframe": "4h",
+      "pairs": [
+        "BTC/USDT",
+        "ETH/USDT",
+        "SOL/USDT",
+        "XRP/USDT"
+      ],
+      "initial_capital": 10000.0,
+      "dry_run_wallet": null,
+      "enable_trading_mode": false,
+      "params": {}
+    },
+    "data": {
+      "data_dir": "user_data\\cache",
+      "exchange": "portfoliobench",
+      "cache_dir": "./user_data/cache",
+      "params": {}
+    },
+    "enable_validation": true,
+    "validate_data_integrity": true,
+    "validate_alpha_signals": true,
+    "validate_strategy_signals": true,
+    "validate_portfolio_weights": true,
+    "output_dir": "./output",
+    "export_weights": true,
+    "export_backtest_results": true,
+    "export_metrics": true,
+    "verbose": true
+  }
+}

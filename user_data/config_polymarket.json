@@ -1,13 +1,13 @@
 {
     "$schema": "https://schema.freqtrade.io/schema.json",
     "max_open_trades": 8,
-    "stake_currency": "USDT",
-    "stake_amount": "unlimited",
+    "stake_currency": "USDC",
+    "stake_amount": 100000,
     "tradable_balance_ratio": 1,
     "fiat_display_currency": "USD",
     "timeframe": "4h",
     "dry_run": true,
-    "dry_run_wallet": 10000,
+    "dry_run_wallet": 1000000,
     "fee": 0.0,
     "cancel_open_orders_on_exit": false,
     "trading_mode": "spot",
@@ -40,14 +40,9 @@
         "ccxt_config": {},
         "ccxt_async_config": {},
         "pair_whitelist": [
-            "TRUMP-WIN-YES/USDT",
-            "ETH-10K-YES/USDT",
-            "FED-RATE-CUT-YES/USDT",
-            "BTC-100K-YES/USDT",
-            "RECESSION-2025-YES/USDT",
-            "AI-REGULATION-YES/USDT",
-            "SPX-6000-YES/USDT",
-            "SOL-500-YES/USDT"
+            "WillThePriceOfBitcoinBeAbove900YES20260121/USDC",
+            "WillThePriceOfBitcoinBeAbove920YES20260121/USDC",
+            "WillThePriceOfBitcoinBeAbove960YES20260121/USDC"
         ],
         "pair_blacklist": [],
         "fee": 0.0

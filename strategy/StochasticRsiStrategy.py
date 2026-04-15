@@ -1,7 +1,8 @@
 """Strategy: Stochastic RSI Strategy"""
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
+
 
 class StochasticRsiStrategy(IStrategy):
     timeframe = "5m"

@@ -1,0 +1,109 @@
+{
+  "name": "Balanced Multi-Alpha Portfolio",
+  "version": "1.0",
+  "description": "Portfolio combining EMA, RSI, and MACD alpha factors with ONS optimization on mixed assets",
+  
+  "alpha": [
+    {
+      "type": "ema",
+      "params": {
+        "fast_period": 12,
+        "slow_period": 26,
+        "exit_period": 9
+      }
+    },
+    {
+      "type": "rsi",
+      "params": {
+        "period": 14,
+        "overbought": 70,
+        "oversold": 30
+      }
+    },
+    {
+      "type": "macd",
+      "params": {
+        "fast_period": 12,
+        "slow_period": 26,
+        "signal_period": 9
+      }
+    }
+  ],
+  
+  "strategies": [
+    {
+      "type": "ema_cross",
+      "alpha_factors": [
+        { "type": "ema" }
+      ],
+      "params": {}
+    },
+    {
+      "type": "rsi_bollinger",
+      "alpha_factors": [
+        { "type": "rsi" }
+      ],
+      "params": {}
+    },
+    {
+      "type": "macd_adx",
+      "alpha_factors": [
+        { "type": "macd" }
+      ],
+      "params": {}
+    }
+  ],
+  
+  "portfolio": {
+    "algorithm": "ons",
+    "strategies": [
+      { "type": "ema_cross" },
+      { "type": "rsi_bollinger" },
+      { "type": "macd_adx" }
+    ],
+    "strategy_weights": {
+      "ema_cross": 0.4,
+      "rsi_bollinger": 0.3,
+      "macd_adx": 0.3
+    },
+    "rebalance_frequency": "daily",
+    "params": {
+      "eta": 0.0,
+      "beta": 1.0,
+      "delta": 0.125
+    }
+  },
+  
+  "backtest": {
+    "timerange": "20250101-20250601",
+    "timeframe": "1d",
+    "pairs": [
+      "BTC/USDT",
+      "ETH/USDT",
+      "SOL/USDT",
+      "AAPL/USD",
+      "MSFT/USD"
+    ],
+    "initial_capital": 50000.0,
+    "dry_run_wallet": null,
+    "enable_trading_mode": false
+  },
+  
+  "data": {
+    "data_dir": "./user_data/data/usstock",
+    "exchange": "portfoliobench",
+    "cache_dir": "./user_data/cache"
+  },
+  
+  "enable_validation": true,
+  "validate_data_integrity": true,
+  "validate_alpha_signals": true,
+  "validate_strategy_signals": true,
+  "validate_portfolio_weights": true,
+  
+  "output_dir": "./output/balanced_multi_alpha",
+  "export_weights": true,
+  "export_backtest_results": true,
+  "export_metrics": true,
+  "verbose": false
+}

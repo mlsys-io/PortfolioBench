@@ -25,16 +25,13 @@ _LUMIDSTACK = os.path.join(os.path.dirname(_PROJECT_ROOT), "LumidStack")
 if os.path.isdir(_LUMIDSTACK) and _LUMIDSTACK not in sys.path:
     sys.path.insert(0, _LUMIDSTACK)
 
+from adapters.portbench.runner import LocalWorkflowRunner
 from workflow.executor import (
-    ALPHA_REGISTRY,
-    SIGNAL_DISPATCH,
     handle_alpha,
     handle_portfolio,
     handle_strategy,
     register_all_handlers,
 )
-from adapters.portbench.runner import LocalWorkflowRunner
-
 
 # ---------------------------------------------------------------------------
 # Helpers

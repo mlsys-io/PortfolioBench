@@ -1,11 +1,12 @@
-import numpy as np
-import pandas as pd
-from scipy.optimize import minimize
-from freqtrade.strategy import IStrategy
-from freqtrade.persistence import Trade
+import logging
 from datetime import datetime
 from typing import Optional
-import logging
+
+import numpy as np
+import pandas as pd
+from freqtrade.persistence import Trade
+from freqtrade.strategy import IStrategy
+from scipy.optimize import minimize
 
 # Initialize the logger
 logger = logging.getLogger(__name__)
@@ -96,7 +97,12 @@ class ONS_Portfolio(IStrategy):
         
         if self.dp:
             # Dynamically fetch the current whitelist provided to the bot
-            target_pairs = self.dp.current_whitelist()
+            try:
+                target_pairs = self.dp.current_whitelist()
+            except Exception:
+                logger.debug(f"Pairlist provider not available. Falling back to single pair: {metadata['pair']}")
+                target_pairs = [metadata['pair']]
+                
             price_dict = {}
             for pair in target_pairs:
                 inf_df = self.dp.get_pair_dataframe(pair, self.timeframe)

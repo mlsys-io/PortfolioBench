@@ -1,7 +1,8 @@
 """Strategy 6: CCI Mean Reversion"""
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
+
 
 class CciMeanReversionStrategy(IStrategy):
     timeframe = "5m"

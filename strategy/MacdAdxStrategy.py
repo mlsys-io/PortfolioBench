@@ -1,12 +1,11 @@
 from datetime import datetime
-from pandas import DataFrame
-
-from freqtrade.strategy import (
-    IStrategy,
-    IntParameter,
-)
 
 import talib.abstract as ta
+from freqtrade.strategy import (
+    IntParameter,
+    IStrategy,
+)
+from pandas import DataFrame
 
 
 class MacdAdxStrategy(IStrategy):

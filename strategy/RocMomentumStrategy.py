@@ -1,7 +1,8 @@
 """Strategy 8: Rate of Change Momentum"""
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
+
 
 class RocMomentumStrategy(IStrategy):
     timeframe = "5m"
