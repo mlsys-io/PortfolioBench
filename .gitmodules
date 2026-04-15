@@ -5,3 +5,4 @@
 [submodule "stg"]
 	path = stg
 	url = https://github.com/casperngeen/event-pred
+	branch = main
