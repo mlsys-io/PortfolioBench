@@ -39,11 +39,12 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
 import pandas as pd
+
 from freqtrade.persistence import Trade
 from freqtrade.strategy import IStrategy
 
@@ -56,7 +57,7 @@ logger = logging.getLogger(__name__)
 SETTLE_YES = 0.999
 SETTLE_NO = 0.001
 
-UTC = UTC
+UTC = timezone.utc
 
 
 class DualModelPolymarketPortfolio(IStrategy):
@@ -101,10 +102,19 @@ class DualModelPolymarketPortfolio(IStrategy):
         return Path(__file__).resolve().parents[1]
 
     def _load_contracts_registry(self) -> dict[str, ContractMetadata]:
-        """Load contract metadata and return a dict keyed by pair_yes."""
+        """Load contract metadata and return a dict keyed by pair_yes.
+
+        The JSONL path can be overridden via ``config["contracts_jsonl"]``.
+        Defaults to ``user_data/data/polymarket_contracts/jan20.jsonl``.
+        """
         data_root = self._resolve_data_root()
-        jsonl_path = data_root / "data" / "polymarket_contracts" / "jan20.jsonl"
-        contracts = load_contracts(jsonl_path)
+        if hasattr(self, "config") and "contracts_jsonl" in self.config:
+            jsonl_path = Path(self.config["contracts_jsonl"])
+            if not jsonl_path.is_absolute():
+                jsonl_path = data_root / jsonl_path
+        else:
+            jsonl_path = data_root / "data" / "polymarket_contracts" / "jan20.jsonl"
+        contracts = load_contracts(jsonl_path, skip_unparseable=True)
         return {c.pair_yes: c for c in contracts}
 
     def _get_registry(self) -> dict[str, ContractMetadata]:
@@ -112,15 +122,27 @@ class DualModelPolymarketPortfolio(IStrategy):
             self._contract_registry = self._load_contracts_registry()
         return self._contract_registry
 
+    def _get_predictions_dir(self) -> Path:
+        """Return the directory containing event_probs CSVs.
+
+        Defaults to ``user_data/data/polymarket_ml``.
+        Override via ``config["predictions_dir"]`` (relative paths are resolved
+        against ``user_data/``).
+        """
+        data_root = self._resolve_data_root()
+        if hasattr(self, "config") and "predictions_dir" in self.config:
+            p = Path(self.config["predictions_dir"])
+            return p if p.is_absolute() else data_root / p
+        return data_root / "data" / "polymarket_ml"
+
     def _load_event_probs(self, pair: str) -> pd.DataFrame | None:
         """Load per-contract event probability CSV produced by build_event_predictions.
 
         Returns a DataFrame indexed by UTC timestamps with a ``fair_value`` column,
         or ``None`` if the file does not exist.
         """
-        data_root = self._resolve_data_root()
         filename = pair.replace("/", "_") + "-event_probs.csv"
-        csv_path = data_root / "data" / "polymarket_ml" / filename
+        csv_path = self._get_predictions_dir() / filename
 
         if not csv_path.exists():
             return None
