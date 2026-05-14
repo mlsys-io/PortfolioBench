@@ -69,7 +69,7 @@ OHLCV data is hosted on Google Drive. Use the `portbench` CLI to download it:
 ```bash
 pip install gdown
 portbench download-data --exchange portfoliobench   # crypto + US stocks + global indices
-portbench download-data --exchange polymarket        # Polymarket prediction-market contracts
+portbench download-data --exchange polymarket        # Polymarket prediction-market contracts, orderbooks and markets metadata
 ```
 
 This downloads feather files into the data directory (`user_data/data/portfoliobench/` or `user_data/data/polymarket/`).
@@ -264,6 +264,42 @@ PortfolioBench supports backtesting on **Polymarket**, a decentralized predictio
 bash utils/backtest_polymarket.bash
 ```
 
+### Orderbook Dataset Pipeline
+
+To build a feature-enriched orderbook dataset from raw Polymarket data, use the pipeline script in `dataset/polymarket_orderbook/`:
+
+```bash
+# Run the full pipeline with defaults (2025-10-14 → 2026-03-31, top 70 markets)
+python dataset/polymarket_orderbook/run_pipeline.py
+```
+
+The pipeline runs three stages in sequence:
+
+| Stage | Script | Output |
+|-------|--------|--------|
+| 1. Parse | `parser.py` | `markets.parquet`, `tokens.parquet`, `filtered_token_ids.parquet` |
+| 2. Fetch | `fetch_orderbook.py` | `raw_orderbook/ob_<token_id>.parquet` per token |
+| 3. Features | `orderbook_feature_generation.py` | `feat_orderbook/feat_<token_id>.parquet` per token |
+
+The pipeline is resumable — already-fetched tokens are skipped automatically.
+
+**Common options:**
+
+```bash
+# Custom date range
+python dataset/polymarket_orderbook/run_pipeline.py --start-date 2025-01-01 --end-date 2025-06-30
+
+# Skip stages already completed
+python dataset/polymarket_orderbook/run_pipeline.py --skip-parse
+python dataset/polymarket_orderbook/run_pipeline.py --skip-parse --skip-fetch
+
+# Re-fetch all orderbooks even if already saved
+python dataset/polymarket_orderbook/run_pipeline.py --skip-parse --force
+
+# Filter by market count or end date
+python dataset/polymarket_orderbook/run_pipeline.py --top-markets 100 --min-end-date 2025-06-01
+```
+
 ---
 
 ## Hyperparameter Optimization
@@ -330,7 +366,7 @@ PortfolioBench/
 ├── benchmark_all.py           # Full benchmark matrix runner
 ├── cli.py                     # CLI entry point
 ├── generate_report.py         # Report generation utilities
-├── dataset/                   # Data management module (placeholder)
+├── dataset/polymarket_orderbook/  # Orderbook dataset pipeline (parse → fetch → features)
 ├── tests/                     # Unit and integration tests
 ├── user_data/data/usstock/    # 357 OHLCV feather files (download from Google Drive)
 └── utils/                     # Bash helpers for backtesting and data generation
