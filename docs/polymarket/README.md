@@ -127,10 +127,11 @@ Run the preparation script to rebuild everything from the raw BTC price series:
 python scripts/prepare_event_model.py
 ```
 
-This executes three steps automatically:
+This executes four steps automatically:
 
 | Step | What it does | Output |
 |---|---|---|
+| 0 — Build feather files | Generates OHLCV feather files per contract (synthetic by default; see [Using Real Data](#using-real-polymarket-data)) | `*.feather` files in `--output-dir` |
 | 1 — Build training data | Constructs synthetic weekly BTC binary events from `data_1h.csv` | `event_model_training.parquet` |
 | 2 — Train model | Fits and calibrates a logistic regression on the training data | `event_model.pkl` |
 | 3 — Generate predictions | Runs the model at every hourly bar before each contract's expiry | Per-contract `*-event_probs.csv` files |
@@ -151,13 +152,63 @@ python scripts/prepare_event_model.py \
 | Flag | Default | Description |
 |---|---|---|
 | `--btc-csv` | `mycode/data/data_1h.csv` | Path to hourly BTC OHLCV CSV |
-| `--contracts` | `user_data/data/polymarket_contracts/jan20.jsonl` | Contract metadata JSONL |
+| `--contracts` | `user_data/data/polymarket_contracts/jan20.jsonl` | Contract metadata JSONL (ignored when `--use-real-data` is set) |
 | `--output-dir` | `user_data/data/polymarket_ml` | Where all artefacts are written |
 | `--start-date` | `2018-01-01` | Earliest settlement date for training samples |
 | `--end-date` | `2025-06-01` | Latest settlement date (exclusive) |
 | `--val-cutoff` | `2024-01-01` | Events before this date → training; after → validation |
 | `--model-type` | `logistic` | `logistic` (default) or `xgboost` |
+| `--skip-feathers` | off | Skip step 0 if feather files already exist in `--output-dir` |
 | `--skip-training-data` | off | Skip step 1 if the Parquet already exists |
+| `--use-real-data` | off | Step 0: build feathers from real Polymarket trade data instead of synthetic prices |
+| `--parquet-path` | `mycode/data/combined_filtered_data.paquet` | Path to the Polymarket trade-history parquet (only used with `--use-real-data`) |
+
+### Using Real Polymarket Data
+
+By default, step 0 generates **synthetic** OHLCV price series for each contract. If you
+have a Polymarket trade-history parquet file, you can use real market prices instead:
+
+```bash
+python scripts/prepare_event_model.py \
+    --use-real-data \
+    --parquet-path mycode/data/combined_filtered_data.paquet \
+    --output-dir   user_data/data/polymarket_ml_real
+```
+
+This runs `polymarket/real_data_builder.py` which:
+
+1. Loads the parquet and filters to BTC/Bitcoin YES-side rows.
+2. Parses each market's strike (`$88K`, `$90,000`, etc.) and expiry date from the
+   `question` text.
+3. Checks that the last 7-day window has at least 60% hourly coverage (≥ 101 of 168
+   candles).
+4. Forward-fills gaps of up to 6 consecutive hours; excludes contracts with longer gaps.
+5. Writes a freqtrade-compatible `*.feather` file for each qualifying contract.
+6. Serialises all parsed contracts to `real_contracts.jsonl` in the output directory.
+
+The event model and downstream prediction steps (steps 1–3) are unchanged — they work
+with the same feather files regardless of whether they were generated synthetically or
+from real data.
+
+**Parquet format requirements:**
+
+| Column | Type | Description |
+|---|---|---|
+| `timestamp` | datetime (UTC) | Candle open time |
+| `condition_id` | string | Market identifier |
+| `side` | string | `"Yes"` or `"No"` — only YES-side rows are used |
+| `open`, `high`, `low`, `close` | string-encoded float | OHLC prices (0–1 range) |
+| `volume` | int64 | Traded volume |
+| `question` | string | Human-readable market question |
+
+**Coverage thresholds:**
+
+| Gap length | Treatment |
+|---|---|
+| 1–6 hours | Forward-filled (price unchanged) |
+| 7–23 hours | Forward-filled, but a `WARNING` is logged |
+| ≥ 24 hours consecutively | Contract excluded (price too stale) |
+| < 60% of window rows present | Contract excluded |
 
 For the full training reference — feature engineering, label construction, temporal
 splits, calibration, and inference — see [training-guide.md](training-guide.md).
@@ -193,6 +244,37 @@ At each hourly candle, the strategy:
 
 To override parameters without modifying the strategy file, subclass
 `DualModelPolymarketPortfolio` and set the class attributes.
+
+### Configurable data paths (via config JSON)
+
+Two file paths used by the strategy can be overridden through the freqtrade config JSON
+without touching the strategy source:
+
+| Config key | Default | Description |
+|---|---|---|
+| `contracts_jsonl` | `user_data/data/polymarket_contracts/jan20.jsonl` | Path to the contract metadata JSONL file; relative paths are resolved against `user_data/` |
+| `predictions_dir` | `user_data/data/polymarket_ml` | Directory containing per-contract `*-event_probs.csv` files; relative paths are resolved against `user_data/` |
+
+Example config for a real-data backtest:
+
+```json
+{
+  "contracts_jsonl": "data/polymarket_ml_real/real_contracts.jsonl",
+  "predictions_dir": "data/polymarket_ml_real",
+  "exchange": {
+    "name": "polymarket",
+    "pair_whitelist": [
+      "BTCABOVE108K-SEP5-YES/USDT",
+      "BTCABOVE110K-SEP5-YES/USDT"
+    ]
+  }
+}
+```
+
+Contracts loaded from `real_contracts.jsonl` (produced by `--use-real-data`) may
+contain question patterns that the minimal regex in the synthetic pipeline did not
+support (e.g. "reach $108K"). The loader automatically skips unparseable lines with a
+warning, so a mixed JSONL file will not crash the strategy.
 
 ### Position sizing (Kelly formula)
 
@@ -358,8 +440,21 @@ are:
 ```
 
 The `load_contracts()` function extracts the strike and direction from the `question`
-field using a regex match for `"above $X,XXX"` or `"below $X,XXX"`. Settlement is
-determined from `outcomePrices`.
+field. Supported question patterns include:
+
+| Pattern | Direction | Example |
+|---|---|---|
+| `above $X,XXX` / `above $XXK` | above | "Bitcoin above $90,000 on January 20?" |
+| `reach/hit/exceed/surpass $X,XXX` | above | "Will Bitcoin reach $120,000 by December?" |
+| `below $X,XXX` / `less than $X,XXX` | below | "Bitcoin below $80,000 on March 1?" |
+| `dips to $X,XXX` | below | "Will Bitcoin dip to $70K in October?" |
+
+Strikes can be written with or without a `K`/`k` suffix (e.g. `$88K` = `$88,000`).
+Settlement is determined from `outcomePrices`.
+
+Lines whose question cannot be parsed are skipped with a warning (see `skip_unparseable`
+in `load_contracts`) rather than raising an error, so a JSONL file with mixed contract
+types will not crash the strategy.
 
 Place the file at `user_data/data/polymarket_contracts/<name>.jsonl` and update
 `--contracts` in the prepare script.
@@ -384,13 +479,17 @@ Timestamp,Open,High,Low,Close,Volume
 - Optional on-chain columns: `mvrv`, `hash-rate`, `difficulty` (omit if unavailable;
   the corresponding features will be NaN and effectively ignored by the model).
 
-### 3 — Feather files (synthetic OHLCV)
+### 3 — Feather files (synthetic or real OHLCV)
 
-The backtester requires a synthetic OHLCV feather file for each pair. These are
-generated by the existing `build_all_feathers()` function. They are **not** real
-Polymarket quotes — they are synthetic price series used solely to satisfy freqtrade's
-data loading requirements. The strategy ignores OHLCV values other than `close` for
-market price.
+The backtester requires an OHLCV feather file for each pair. Two sources are supported:
+
+- **Synthetic (default):** generated by `build_all_feathers()` from `data_builder.py`.
+  These are modelled price series used solely to satisfy freqtrade's data loading
+  requirements. The strategy ignores OHLCV values other than `close` for market price.
+- **Real Polymarket data:** generated by `build_all_feathers_from_parquet()` from
+  `real_data_builder.py` (requires a trade-history parquet). These contain actual
+  historical Polymarket prices from the YES-side order book. Use `--use-real-data` in
+  `prepare_event_model.py` to build these instead of synthetic files.
 
 ### 4 — Per-contract predictions
 

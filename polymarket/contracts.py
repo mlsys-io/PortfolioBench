@@ -19,9 +19,13 @@ price for settlement at load time — that alternative path lives in
 from __future__ import annotations
 
 import json
+import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
+
 
 # ---------------------------------------------------------------------------
 # Pair naming helpers
@@ -100,26 +104,44 @@ class ContractMetadata:
 # Strike / direction extraction
 # ---------------------------------------------------------------------------
 
-# Matches "above $90,000", "above $90k", "less than $84,000", etc.
-_ABOVE_RE = re.compile(r"above\s+\$([0-9,]+(?:\.[0-9]+)?)", re.IGNORECASE)
-_BELOW_RE = re.compile(r"(?:less than|below)\s+\$([0-9,]+(?:\.[0-9]+)?)", re.IGNORECASE)
+# Matches "above $90,000", "above $90K", "reach $120,000", "less than $84K", etc.
+# Group 1: numeric part; Group 2: optional K/k suffix.
+_ABOVE_RE = re.compile(
+    r"\b(?:above|reach(?:es)?|hit(?:s)?|exceed(?:s)?|surpass(?:es)?)\s+\$([0-9,]+(?:\.[0-9]+)?)\s*([kK])?(?:\b|$)",
+    re.IGNORECASE,
+)
+_BELOW_RE = re.compile(
+    r"\b(?:less\s+than|below|dip(?:s)?\s+to)\s+\$([0-9,]+(?:\.[0-9]+)?)\s*([kK])?(?:\b|$)",
+    re.IGNORECASE,
+)
 
 
 def _parse_strike_direction(question: str) -> tuple[float, str]:
     """Extract (strike, direction) from a Polymarket question string.
+
+    Handles:
+    - "above $90,000" / "above $90K"
+    - "reach/hit/exceed/surpass $120,000" (treated as 'above')
+    - "less than/below/dips to $84,000" (treated as 'below')
 
     Raises:
         ValueError: If neither 'above' nor 'below/less than' is found.
     """
     m = _ABOVE_RE.search(question)
     if m:
-        strike = float(m.group(1).replace(",", ""))
-        return strike, "above"
+        raw = m.group(1).replace(",", "")
+        has_k = m.group(2) is not None
+        strike = float(raw) * (1_000 if has_k else 1)
+        if strike >= 1_000:
+            return strike, "above"
 
     m = _BELOW_RE.search(question)
     if m:
-        strike = float(m.group(1).replace(",", ""))
-        return strike, "below"
+        raw = m.group(1).replace(",", "")
+        has_k = m.group(2) is not None
+        strike = float(raw) * (1_000 if has_k else 1)
+        if strike >= 1_000:
+            return strike, "below"
 
     raise ValueError(f"Cannot parse strike/direction from question: {question!r}")
 
@@ -149,24 +171,34 @@ def _settlement_from_outcome_prices(outcome_prices_json: str) -> float:
 # Public loader
 # ---------------------------------------------------------------------------
 
-def load_contracts(jsonl_path: str | Path) -> list[ContractMetadata]:
+def load_contracts(
+    jsonl_path: str | Path,
+    *,
+    skip_unparseable: bool = False,
+) -> list[ContractMetadata]:
     """Parse a Polymarket JSONL snapshot into a list of :class:`ContractMetadata`.
 
     Args:
-        jsonl_path: Path to the ``.jsonl`` file (one JSON object per line).
+        jsonl_path:        Path to the ``.jsonl`` file (one JSON object per line).
+        skip_unparseable:  When ``True``, log a warning and skip lines whose
+                           question text cannot be parsed rather than raising.
+                           Useful when loading ``real_contracts.jsonl`` which may
+                           contain exotic question patterns.
 
     Returns:
         List of :class:`ContractMetadata`, sorted by strike ascending.
 
     Raises:
         FileNotFoundError: If ``jsonl_path`` does not exist.
-        ValueError:        If a line cannot be parsed.
+        ValueError:        If a line cannot be parsed and ``skip_unparseable`` is
+                           ``False``.
     """
     path = Path(jsonl_path)
     if not path.exists():
         raise FileNotFoundError(f"Contract metadata file not found: {path}")
 
     contracts: list[ContractMetadata] = []
+    skipped = 0
 
     with path.open() as fh:
         for lineno, line in enumerate(fh, start=1):
@@ -182,6 +214,10 @@ def load_contracts(jsonl_path: str | Path) -> list[ContractMetadata]:
             try:
                 strike, direction = _parse_strike_direction(d["question"])
             except ValueError as exc:
+                if skip_unparseable:
+                    logger.debug("Skipping line %d (%s): %s", lineno, d.get("slug", "?"), exc)
+                    skipped += 1
+                    continue
                 raise ValueError(f"Line {lineno} ({d.get('slug', '?')}): {exc}") from exc
 
             settlement = _settlement_from_outcome_prices(d["outcomePrices"])
@@ -207,6 +243,9 @@ def load_contracts(jsonl_path: str | Path) -> list[ContractMetadata]:
                     raw=d,
                 )
             )
+
+    if skipped:
+        logger.info("load_contracts: skipped %d unparseable lines in %s", skipped, path.name)
 
     contracts.sort(key=lambda c: c.strike)
     return contracts
